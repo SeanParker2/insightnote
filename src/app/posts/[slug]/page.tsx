@@ -14,14 +14,11 @@ import Link from 'next/link';
 
 const playfair = Playfair_Display({ subsets: ['latin'] });
 
-// Helper to map DB columns to Post interface if needed, or use aliasing in query
-// We will use aliasing in the query to match Post interface
-
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = await createClient();
   const { data: post } = await supabase
     .from('posts')
-    .select('title, summary_tldr')
+    .select('title, tldr_content')
     .eq('slug', params.slug)
     .single();
 
@@ -29,7 +26,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   
   return {
     title: `${post.title} | InsightNote`,
-    description: post.summary_tldr,
+    description: post.tldr_content,
   };
 }
 
@@ -43,10 +40,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
       id,
       slug,
       title,
-      tldr_content:summary_tldr,
-      full_content:content_mdx,
-      institutional_source:source_institution,
-      report_date:source_date,
+      tldr_content,
+      full_content,
+      institutional_source,
+      report_date,
       published_at,
       is_premium,
       tags,
@@ -64,9 +61,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
     // notFound(); 
   }
   
-  // Cast to Post type (aliasing handles the field names)
+  // Cast to Post type (DB columns match Post interface)
   // We include butterfly_nodes in the fetch but Post type might not have it unless we extend it
-  // Let's handle it gracefully
   const post = rawPost as unknown as (Post & { butterfly_nodes?: ButterflyNode[] });
 
   // Fallback to mock data if DB returns nothing (for demo purposes)
