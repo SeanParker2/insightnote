@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { Playfair_Display } from '@/lib/fonts';
 import { Calendar, Share2, Download, User as UserIcon, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockPostDetail } from '@/lib/mock/post-detail.mock';
 import { MarkdownContent } from '@/components/post/MarkdownContent';
 import { createClient } from '@/lib/supabase/server';
 import { Post } from '@/lib/types';
@@ -54,26 +54,13 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
   // Handle 404
   if (postError || !rawPost) {
-    if (params.slug !== '404') {
-        console.error('Post not found or DB error:', postError);
-    }
-    // Only return 404 if we strictly want to enforce DB
-    // notFound(); 
+    console.error('Post not found or DB error:', postError);
+    notFound(); 
   }
   
   // Cast to Post type (DB columns match Post interface)
   // We include butterfly_nodes in the fetch but Post type might not have it unless we extend it
   const post = rawPost as unknown as (Post & { butterfly_nodes?: ButterflyNode[] });
-
-  // Fallback to mock data if DB returns nothing (for demo purposes)
-  const displayPost = post || {
-      ...mockPostDetail,
-      tldr_content: mockPostDetail.summary_tldr,
-      full_content: mockPostDetail.content_mdx || '',
-      institutional_source: mockPostDetail.source_institution || 'InsightNote',
-      report_date: mockPostDetail.source_date ? new Date(mockPostDetail.source_date).toISOString() : new Date().toISOString(),
-  } as unknown as (Post & { butterfly_nodes?: ButterflyNode[] });
-
 
   // 2. Fetch User & Profile
   const { data: { user } } = await supabase.auth.getUser();
@@ -89,7 +76,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   }
 
   // 3. Access Control Logic
-  const canAccess = canAccessContent(profile as Profile | null, displayPost);
+  const canAccess = canAccessContent(profile as Profile | null, post);
 
   return (
     <div className="min-h-screen bg-white pb-20">
@@ -119,7 +106,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
           {/* Header Section */}
           <header className="mb-10 text-center lg:text-left">
             <div className="flex flex-wrap items-center gap-2 mb-6 justify-center lg:justify-start">
-              {displayPost.tags?.map(tag => (
+              {post.tags?.map(tag => (
                 <Badge key={tag} variant="outline" className="border-brand-gold/30 text-brand-gold/80 bg-brand-gold/5 uppercase text-[10px] tracking-widest px-3 py-1">
                   {tag}
                 </Badge>
@@ -127,7 +114,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
             </div>
             
             <h1 className={`${playfair.className} text-3xl md:text-5xl font-bold leading-tight text-brand-900 mb-6`}>
-              {displayPost.title}
+              {post.title}
             </h1>
             
             {/* Metadata Grid */}
@@ -136,14 +123,14 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-[10px] font-bold uppercase text-slate-400 mb-1">
                   <Building2 className="w-3 h-3" /> Source
                 </div>
-                <div className="text-sm font-bold text-slate-900">{displayPost.institutional_source}</div>
+                <div className="text-sm font-bold text-slate-900">{post.institutional_source}</div>
               </div>
               <div className="text-center lg:text-left border-r border-slate-100 last:border-0 px-4">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-[10px] font-bold uppercase text-slate-400 mb-1">
                   <Calendar className="w-3 h-3" /> Report Date
                 </div>
                 <div className="text-sm font-bold text-slate-900">
-                  {new Date(displayPost.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(post.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
               <div className="text-center lg:text-left px-4">
@@ -161,7 +148,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
               TL;DR
             </div>
             <p className="font-sans text-base leading-relaxed text-slate-800">
-              {displayPost.tldr_content}
+              {post.tldr_content}
             </p>
           </div>
 
@@ -175,10 +162,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
             )}
             
             {canAccess ? (
-               <MarkdownContent content={displayPost.full_content || ''} />
+               <MarkdownContent content={post.full_content || ''} />
             ) : (
               <>
-                <MarkdownContent content={(displayPost.full_content || '').substring(0, 1000)} />
+                <MarkdownContent content={(post.full_content || '').substring(0, 1000)} />
                 
                 <div className="absolute bottom-0 left-0 right-0 flex justify-center py-12 bg-linear-to-t from-white via-white/95 to-transparent z-20">
                   <div className="bg-white p-8 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] text-center border border-slate-100 max-w-md mx-4">
