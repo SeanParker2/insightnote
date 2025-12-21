@@ -17,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "InsightNote | Professional Financial Insights",
-  description: "Deep dive into financial reports and market analysis.",
+  title: "InsightNote｜专业金融洞察",
+  description: "深度解读财报与市场变化，提供可复用的研究框架与分析。",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body
         className={`${inter.variable} ${playfair.variable} antialiased min-h-screen flex flex-col font-sans bg-background text-foreground`}
       >

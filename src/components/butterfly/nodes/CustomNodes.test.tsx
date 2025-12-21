@@ -26,7 +26,7 @@ describe('Butterfly Map Nodes', () => {
     // @ts-expect-error - Minimal props for testing
     renderWithProvider(<TriggerNode {...baseProps} data={data} />);
     
-    expect(screen.getByText('Event Trigger')).toBeInTheDocument();
+    expect(screen.getByText('事件触发')).toBeInTheDocument();
     expect(screen.getByText('Test Trigger')).toBeInTheDocument();
   });
 
@@ -35,7 +35,7 @@ describe('Butterfly Map Nodes', () => {
     // @ts-expect-error - Minimal props for testing
     renderWithProvider(<ImpactNode {...baseProps} data={data} />);
     
-    expect(screen.getByText('Consequence')).toBeInTheDocument();
+    expect(screen.getByText('结果')).toBeInTheDocument();
     expect(screen.getByText('Test Impact')).toBeInTheDocument();
   });
 
@@ -48,7 +48,7 @@ describe('Butterfly Map Nodes', () => {
     // @ts-expect-error - Minimal props for testing
     renderWithProvider(<TickerNode {...baseProps} data={data} />);
     
-    expect(screen.getByText('Ticker')).toBeInTheDocument();
+    expect(screen.getByText('代码')).toBeInTheDocument();
     expect(screen.getByText('TST')).toBeInTheDocument();
     expect(screen.getByText('+5.5%')).toHaveClass('text-green-500');
   });

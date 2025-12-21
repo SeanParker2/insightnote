@@ -1,11 +1,5 @@
 import { Node, Edge } from '@xyflow/react';
-
-export interface ButterflyNodeData extends Record<string, unknown> {
-  label: string;
-  ticker?: string;
-  changePercent?: number;
-  description?: string;
-}
+import type { ButterflyNodeData } from '@/types/butterfly';
 
 export type ButterflyNode = Node<ButterflyNodeData, 'trigger' | 'impact' | 'ticker'>;
 

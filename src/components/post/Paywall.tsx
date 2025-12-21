@@ -11,18 +11,18 @@ export function Paywall() {
           </div>
         </div>
         <h3 className="mb-2 text-xl font-bold font-serif text-brand-900">
-          Unlock Full Analysis & Valuation Models
+          解锁完整分析与估值模型
         </h3>
         <p className="mb-6 text-sm text-slate-500">
-          Continue reading to see our proprietary Discounted Cash Flow (DCF) models and the &quot;Butterfly Effect&quot; map for this sector.
+          继续阅读即可查看我们的现金流折现（DCF）模型与该行业的「蝴蝶效应图谱」。
         </p>
         
         <div className="space-y-3">
           <Button className="w-full font-bold tracking-wider uppercase bg-brand-900 hover:bg-brand-800">
-            Start Pro Membership ($9.9/mo)
+            开通 Pro（$9.9/月）
           </Button>
           <p className="text-xs text-slate-400">
-            Already a member? <a href="#" className="font-bold text-brand-900 hover:underline">Sign In</a>
+            已是会员？<a href="#" className="font-bold text-brand-900 hover:underline">登录</a>
           </p>
         </div>
       </div>

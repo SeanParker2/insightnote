@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function Footer() {
   return (
     <footer className="border-t bg-brand-900 text-white py-8">
@@ -5,16 +7,25 @@ export function Footer() {
         <div className="flex flex-col gap-2">
           <span className="font-serif text-xl font-bold">InsightNote</span>
           <p className="text-sm text-gray-400">
-            Professional Financial Insights & Analysis
+            专业金融洞察与分析
           </p>
         </div>
         <div className="flex gap-6 text-sm text-gray-300">
-          <a href="#" className="hover:text-brand-gold transition-colors">Privacy</a>
-          <a href="#" className="hover:text-brand-gold transition-colors">Terms</a>
-          <a href="#" className="hover:text-brand-gold transition-colors">Contact</a>
+          <Link href="/pricing" className="hover:text-brand-gold transition-colors">
+            订阅
+          </Link>
+          <Link href="/privacy" className="hover:text-brand-gold transition-colors">
+            隐私
+          </Link>
+          <Link href="/terms" className="hover:text-brand-gold transition-colors">
+            条款
+          </Link>
+          <Link href="/feedback" className="hover:text-brand-gold transition-colors">
+            反馈
+          </Link>
         </div>
         <div className="text-xs text-gray-500">
-          © {new Date().getFullYear()} InsightNote. All rights reserved.
+          © {new Date().getFullYear()} InsightNote。版权所有。
         </div>
       </div>
     </footer>
