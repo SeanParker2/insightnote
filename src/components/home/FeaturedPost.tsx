@@ -1,12 +1,10 @@
 import { memo } from 'react';
 import { PostListItem } from '@/types';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { formatDateCN } from '@/lib/utils';
 import { PredictionBadge } from '@/components/predictions/PredictionBadge';
 import Image from 'next/image';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 interface FeaturedPostProps {
   post: PostListItem;

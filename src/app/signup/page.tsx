@@ -2,12 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/analytics';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 export default function SignupPage() {
   const supabase = useMemo(() => createClient(), []);

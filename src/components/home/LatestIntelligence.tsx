@@ -2,14 +2,12 @@
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PostListItem } from '@/types';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { Lock, ArrowUpRight } from 'lucide-react';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { trackEvent } from '@/lib/analytics';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { formatDateCN, formatTimeCN, uiTerms, cn } from '@/lib/utils';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 interface LatestIntelligenceProps {
   posts: PostListItem[];

@@ -1,26 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, JetBrains_Mono } from '@/lib/fonts';
+import { inter, playfair, mono } from '@/lib/fonts';
 import "./globals.css";
-import { Header } from "@/components/Header";
+import { AppSidebar } from "@/components/AppSidebar";
 import { Footer } from "@/components/Footer";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "InsightNote｜专业金融洞察",
@@ -35,11 +17,13 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="dark">
       <body
-        className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} antialiased min-h-screen flex flex-col font-sans bg-background text-foreground`}
+        className={`${inter.variable} ${playfair.variable} ${mono.variable} antialiased min-h-screen flex font-sans bg-background text-foreground`}
       >
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AppSidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );

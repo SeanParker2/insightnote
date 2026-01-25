@@ -9,8 +9,8 @@ export const initialNodes: ButterflyNode[] = [
     type: 'trigger',
     position: { x: 100, y: 300 },
     data: { 
-      label: 'AI Compute Demand Explodes',
-      description: 'Hyperscalers ramping up data center buildout'
+      label: '政策面 (央行降准)',
+      description: '货币政策宽松预期落地'
     },
   },
   {
@@ -18,8 +18,8 @@ export const initialNodes: ButterflyNode[] = [
     type: 'impact',
     position: { x: 400, y: 300 },
     data: { 
-      label: 'Power Shortage',
-      description: 'Grid capacity unable to meet demand in short term'
+      label: '资金面 (流动性宽松)',
+      description: '市场利率下行，资金成本降低'
     },
   },
   {
@@ -27,8 +27,8 @@ export const initialNodes: ButterflyNode[] = [
     type: 'impact',
     position: { x: 700, y: 200 },
     data: { 
-      label: 'Electricity Prices Surge',
-      description: '+40% Premium Est. for baseload power'
+      label: '板块 (券商/红利)',
+      description: '高股息与资本市场受益板块'
     },
   },
   {
@@ -36,10 +36,10 @@ export const initialNodes: ButterflyNode[] = [
     type: 'ticker',
     position: { x: 700, y: 400 },
     data: { 
-      label: 'Vistra Corp',
-      ticker: 'VST',
-      changePercent: 2.3,
-      description: 'Largest competitive power generator in US'
+      label: '东方财富',
+      ticker: '300059.SZ',
+      changePercent: 5.2,
+      description: '互联网券商龙头'
     },
   },
   {
@@ -47,10 +47,10 @@ export const initialNodes: ButterflyNode[] = [
     type: 'ticker',
     position: { x: 1000, y: 400 },
     data: { 
-      label: 'Constellation',
-      ticker: 'CEG',
+      label: '长江电力',
+      ticker: '600900.SS',
       changePercent: 1.8,
-      description: 'Nuclear energy play'
+      description: '水电红利龙头'
     },
   },
 ];

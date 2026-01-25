@@ -1,11 +1,9 @@
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { isSubscriptionActive } from '@/lib/utils';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 function resolveNext(value: string | string[] | undefined) {
   const raw = typeof value === 'string' ? value : Array.isArray(value) ? value[0] : '';

@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/server';
 import { LoginControl } from '@/components/auth/LoginControl';
 import { Button } from '@/components/ui/button';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 function resolveNext(value: string | string[] | undefined) {
   const raw = typeof value === 'string' ? value : Array.isArray(value) ? value[0] : '';

@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/update-market",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/generate-insight",
+      "schedule": "0 8-18 * * *"
+    },
+    {
+      "path": "/api/cron/ai-fallback",
+      "schedule": "0 */4 * * *"
+    }
+  ]
+}

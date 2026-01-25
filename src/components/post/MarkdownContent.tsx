@@ -1,8 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Playfair_Display } from '@/lib/fonts';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
+import { playfair } from '@/lib/fonts';
 
 interface MarkdownContentProps {
   content: string;

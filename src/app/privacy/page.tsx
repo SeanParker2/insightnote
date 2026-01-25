@@ -1,7 +1,5 @@
 import Link from 'next/link';
-import { Playfair_Display } from '@/lib/fonts';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
+import { playfair } from '@/lib/fonts';
 
 export const metadata = {
   title: '隐私政策｜InsightNote',

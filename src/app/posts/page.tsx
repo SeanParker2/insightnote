@@ -1,11 +1,9 @@
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/server';
 import type { PostListItem } from '@/types';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { Lock } from 'lucide-react';
 import { formatDateCN } from '@/lib/utils';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 export const metadata = {
   title: '全部文章｜InsightNote',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,9 +14,10 @@ type Props = {
   initialSubscriptionStatus?: 'free' | 'pro' | null;
   variant?: 'header' | 'page';
   forceExpanded?: boolean;
+  compact?: boolean;
 };
 
-export function LoginControl({ initialEmail, initialSubscriptionStatus, variant = 'header', forceExpanded }: Props) {
+export function LoginControl({ initialEmail, initialSubscriptionStatus, variant = 'header', forceExpanded, compact }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [expanded, setExpanded] = useState(Boolean(forceExpanded));
   const [email, setEmail] = useState('');
@@ -76,7 +78,7 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
 
     bootstrap();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
       if (event === 'SIGNED_OUT') {
         setUserEmail(null);
         setSubscriptionStatus(null);
@@ -196,6 +198,20 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
   }
 
   if (userEmail) {
+    if (compact) {
+      return (
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className="w-6 h-6 rounded-full bg-brand-primary/20 flex items-center justify-center text-xs text-brand-accent font-mono border border-brand-primary/30">
+            {userEmail[0].toUpperCase()}
+          </div>
+          <div className="flex flex-col min-w-0">
+             <span className="text-xs text-slate-300 truncate w-24 font-medium">{userEmail.split('@')[0]}</span>
+             {subscriptionStatus === 'pro' && <span className="text-[9px] text-brand-accent uppercase tracking-wider leading-none">Pro Terminal</span>}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center gap-3">
         {subscriptionStatus === 'pro' && <Badge>Pro</Badge>}
@@ -241,6 +257,19 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
 
   const showToggle = variant === 'header';
   const expandedValue = forceExpanded ? true : expanded;
+
+  if (compact && !userEmail) {
+    return (
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+        className="w-full text-xs h-8 border-white/10 bg-white/5 hover:bg-white/10 text-slate-300"
+      >
+        <Link href="/login">Sign In</Link>
+      </Button>
+    );
+  }
 
   return (
     <div className={variant === 'page' ? 'w-full max-w-lg' : 'flex items-center gap-3'}>

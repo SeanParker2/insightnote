@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { Calendar, GitBranch, User as UserIcon, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,6 @@ import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { ShareButton } from '@/components/post/ShareButton';
 import { VoteControl } from '@/components/community/VoteControl';
 import { formatDateCN, isSubscriptionActive, uiTerms } from '@/lib/utils';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 function toPlainText(markdown: string) {
   return markdown

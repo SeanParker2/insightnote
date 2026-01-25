@@ -1,17 +1,15 @@
 import { MarketTicker } from '@/components/home/MarketTicker';
-import { SidebarItem, DataPoint, InsightCard, ChainNode } from '@/components/home/TerminalUI';
+import { InsightCard } from '@/components/home/TerminalUI';
+import { ButterflyChart } from '@/components/home/ButterflyChart';
 import { butterflyEffects } from '@/lib/mock/tools.mock';
 import { createClient } from '@/lib/supabase/server';
 import { PostListItem } from '@/types';
-import { Playfair_Display, JetBrains_Mono } from '@/lib/fonts';
-import { Activity, Layers, Zap } from 'lucide-react';
+import { playfair, mono } from '@/lib/fonts';
+import { Activity, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export const revalidate = 60; // Revalidate every 60 seconds
-
-// 字体配置
-const playfair = Playfair_Display({ subsets: ['latin'] });
-const mono = JetBrains_Mono({ subsets: ['latin'] });
 
 function toPlainText(markdown: string) {
   return markdown
@@ -126,93 +124,131 @@ export default async function AlphaTerminalPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-(--bg-obsidian) text-slate-300 font-sans selection:bg-(--signal-bull) selection:text-black">
-      {/* 1. 顶栏：不再是简单的Header，而是状态栏 */}
-      <header className="sticky top-0 z-50 border-b border-(--border-glass) bg-(--bg-obsidian)/80 backdrop-blur-md">
+      {/* 1. 顶栏：状态栏 & Ticker */}
+      <header className="sticky top-0 z-40 border-b border-(--border-glass) bg-[#0B1120]/90 backdrop-blur-xl transition-all duration-300">
         <div className="flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-(--signal-bull) rounded-full animate-pulse shadow-[0_0_8px_rgba(0,240,144,0.6)]" />
-            <span className={`${playfair.className} font-bold text-xl tracking-tight text-white`}>InsightNote</span>
-            <span className="text-[10px] uppercase tracking-widest text-slate-500 border border-slate-800 px-1.5 rounded ml-2 font-mono">终端 v3.0</span>
-          </div>
-          {/* 这里的 Ticker 嵌入在 Header 里，节省空间 */}
-          <div className="flex-1 mx-8 overflow-hidden mask-linear-fade relative h-full flex items-center">
+          
+          {/* Ticker */}
+          <div className="flex-1 mr-8 overflow-hidden mask-linear-fade relative h-full flex items-center">
              <MarketTicker className="w-full h-full flex items-center text-xs font-mono" transparent />
           </div>
+          
           <div className="flex items-center gap-4 text-xs font-medium text-slate-400 font-mono">
-            <span>纽约: <span className="text-white">休市</span></span>
-            <span>伦敦: <span className="text-(--signal-bull)">开盘</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span> 纽约: 休市</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-(--signal-bull) animate-pulse"></span> 伦敦: 开盘</span>
           </div>
         </div>
       </header>
 
-      {/* 2. 核心工作区 (3-Column Layout) */}
+      {/* 2. 核心工作区 (2-Column Layout: Content + Right Sidebar) */}
       <div className="flex-1 flex overflow-hidden h-[calc(100vh-3.5rem)]">
         
-        {/* 左侧栏：极简导航 (Icon Only on Tablet, Full on Desktop) */}
-        <nav className="w-64 hidden lg:flex flex-col border-r border-(--border-glass) bg-(--bg-layer-1)/30 p-4 gap-2 shrink-0">
-           <SidebarItem icon={<Activity className="w-4 h-4" />} label="Market Overview" active />
-           <SidebarItem icon={<Layers className="w-4 h-4" />} label="Deep Dives" />
-           <SidebarItem icon={<Zap className="w-4 h-4" />} label="Flash Intel" />
-           <div className="mt-auto p-4 rounded-xl bg-linear-to-br from-indigo-900/20 to-purple-900/20 border border-white/5">
-              <p className="text-xs text-indigo-300 mb-2 font-mono uppercase tracking-wider">Upgrade to Pro</p>
-              <button className="w-full text-xs bg-white text-black font-bold py-2 rounded hover:bg-slate-200 transition-colors">Unlock Alpha</button>
-           </div>
-        </nav>
-
         {/* 中间栏：主要情报流 (The Intelligence Stream) */}
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           
           {loadError && (
              <div className="mb-4 border border-(--signal-bear)/20 bg-(--signal-bear)/5 px-6 py-4 rounded-xl text-sm text-(--signal-bear) flex items-center gap-4">
                <span className="w-2 h-2 rounded-full bg-(--signal-bear) animate-pulse"></span>
                <span>
-                 Connection Interrupted. Using Cached Data.
+                 连接中断，使用缓存数据。
                </span>
              </div>
           )}
 
-          {/* Hero Section: The "Magnum Opus" */}
-          <section className="relative group">
-            <div className="absolute inset-0 bg-linear-to-r from-(--signal-bull)/20 to-blue-600/20 blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
-            <div className="obsidian-card rounded-3xl p-8 relative overflow-hidden border-t border-white/10">
-              {heroPost ? (
-                <>
-                  <div className="flex justify-between items-start mb-6">
-                    <Badge variant="outline" className="border-(--signal-bull) text-(--signal-bull) bg-(--signal-bull)/10 px-3 py-1 font-mono tracking-wider">
-                      CORE THESIS
-                    </Badge>
-                    <span className={`${mono.className} text-xs text-slate-500`}>
-                      {new Date(heroPost.published_at).toLocaleDateString()} • {heroPost.source_institution || 'INSIGHTNOTE'}
-                    </span>
-                  </div>
+          {/* Hero Section: The "Magnum Opus" - Daily Insight */}
+          <section className="relative mb-12">
+            {/* Background Ambient Mesh */}
+            <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand-accent/5 rounded-full blur-[80px] pointer-events-none mix-blend-screen" />
+
+            {heroPost ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* 1. Main Editorial (Cols 1-8) */}
+                <div className="lg:col-span-8 relative group">
+                  {/* Decorative Top Line */}
+                  <div className="w-12 h-0.5 bg-brand-accent mb-6" />
                   
-                  <h1 className={`${playfair.className} text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-[1.1] tracking-tight`}>
-                    {heroPost.title}
-                  </h1>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 border-t border-white/5 pt-8">
-                    <div className="col-span-2">
-                      <p className="text-lg text-slate-400 leading-relaxed font-light">
-                        {heroPost.summary_tldr}
-                      </p>
-                    </div>
-                    <div className="col-span-1 flex flex-col justify-end gap-2">
-                       {/* 迷你数据看板 (Mock Data for Demo) */}
-                       <DataPoint label="DXY Index" value="102.45" change="-0.8%" isUp={false} />
-                       <DataPoint label="Gold (XAU)" value="2,412.00" change="+1.2%" isUp={true} />
-                    </div>
+                  <div className="flex items-center gap-3 mb-4 text-xs font-mono text-slate-500 uppercase tracking-widest">
+                    <span className="text-brand-accent">●</span>
+                    <span>Daily Briefing</span>
+                    <span className="text-slate-700">|</span>
+                    <span>{new Date(heroPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
                   </div>
-                </>
-              ) : (
-                <div className="h-64 flex items-center justify-center text-slate-500">
-                  Initializing Core Thesis...
+
+                  <Link href={`/post/${heroPost.slug}`} className="block">
+                    <h1 className={`${playfair.className} text-5xl lg:text-7xl font-bold text-slate-100 mb-6 leading-[0.95] tracking-tight group-hover:text-white transition-colors`}>
+                      {heroPost.title}
+                    </h1>
+                  </Link>
+
+                  <p className="text-xl text-slate-400 leading-relaxed font-light max-w-3xl border-l-2 border-white/10 pl-6 mb-8 text-pretty">
+                    {heroPost.summary_tldr}
+                  </p>
+
+                  <div className="flex items-center gap-4">
+                     <Link href={`/post/${heroPost.slug}`} className="flex items-center gap-2 text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-2.5 rounded-sm transition-all group/btn">
+                        READ BRIEFING
+                        <ArrowUpRight className="w-4 h-4 text-brand-accent group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                     </Link>
+                     <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+                        <span>{heroPost.source_institution || 'INSIGHT NOTE'}</span>
+                        <span>•</span>
+                        <span>{heroPost.difficulty || 'Market'} Level</span>
+                     </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* 2. Key Metrics / HUD (Cols 9-12) */}
+                <div className="lg:col-span-4 flex flex-col gap-4 pt-12 lg:pt-0">
+                   <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2 flex justify-between">
+                      <span>Market Context</span>
+                      <span className="text-brand-accent">LIVE</span>
+                   </div>
+                   
+                   {/* Mini Cards */}
+                   <div className="p-4 rounded-sm border border-white/5 bg-white/2 backdrop-blur-sm hover:border-white/10 transition-colors">
+                      <div className="flex justify-between items-end mb-2">
+                         <span className="text-xs text-slate-400 font-mono">VIX Index</span>
+                         <span className="text-brand-accent text-lg font-bold font-mono">13.45</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                         <div className="bg-brand-accent w-[30%] h-full" />
+                      </div>
+                   </div>
+
+                   <div className="p-4 rounded-sm border border-white/5 bg-white/2 backdrop-blur-sm hover:border-white/10 transition-colors">
+                      <div className="flex justify-between items-end mb-2">
+                         <span className="text-xs text-slate-400 font-mono">US 10Y Yield</span>
+                         <span className="text-slate-200 text-lg font-bold font-mono">4.12%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                         <span className="text-(--signal-bear)">+0.05%</span>
+                         <span>Today</span>
+                      </div>
+                   </div>
+                   
+                   {/* Sentiment Radar (Mock Visual) */}
+                   <div className="mt-2 p-4 rounded-sm border border-white/5 bg-white/2 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center relative">
+                         <div className="absolute inset-0 border-t-2 border-brand-accent rounded-full animate-spin duration-[3s]" />
+                         <span className="text-[10px] font-bold">N</span>
+                      </div>
+                      <div>
+                         <div className="text-xs text-slate-300 font-bold">Neutral Sentiment</div>
+                         <div className="text-[10px] text-slate-500">Awaiting Fed Decision</div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center border border-dashed border-white/10 rounded-xl">
+                <span className="text-slate-500 font-mono">No Insight Available</span>
+              </div>
+            )}
           </section>
 
-          {/* Sub-Section: Intelligence Grid */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Sub-Section: Intelligence Bento Grid */}
+          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 auto-rows-fr">
              {gridPosts.map(post => (
                <InsightCard 
                   key={post.id}
@@ -230,35 +266,29 @@ export default async function AlphaTerminalPage() {
                 </div>
              )}
           </section>
-        </div>
+        </main>
 
         {/* 右侧栏：量子侧边栏 (The Quantum Sidebar) */} 
-         <aside className="w-80 hidden xl:flex flex-col border-l border-(--border-glass) bg-(--bg-layer-1)/20"> 
+         <aside className="w-80 hidden xl:flex flex-col border-l border-(--border-glass) bg-(--bg-layer-1)/20 backdrop-blur-sm"> 
            
            {/* 1. 蝴蝶效应：今日热链 */} 
            <div className="p-6 border-b border-(--border-glass)"> 
-             <h3 className={`${mono.className} text-xs font-bold text-slate-500 uppercase mb-4 flex items-center gap-2`}> 
-               <Activity className="w-3 h-3" /> 
-               今日蝴蝶效应链 
-             </h3> 
-             {/* 这里用 SVG 画一个垂直的传导链 */} 
-             <div className="space-y-3 relative"> 
-               <div className="absolute left-[7px] top-2 bottom-2 w-px bg-linear-to-b from-white/20 to-transparent" /> 
-               <ChainNode label="美联储降息" type="root" /> 
-               <ChainNode label="收益率下跌" type="event" /> 
-               <ChainNode label="生物科技反弹" type="impact" active /> 
-               <ChainNode label="XBI ETF" type="ticker" change="+4.2%" /> 
-             </div> 
-           </div> 
+            <h3 className={`${mono.className} text-xs font-bold text-slate-500 uppercase mb-4 flex items-center gap-2`}> 
+              <Activity className="w-3 h-3" /> 
+              今日蝴蝶效应链 
+            </h3> 
+            <ButterflyChart />
+          </div> 
  
            {/* 2. 市场情绪雷达 */} 
            <div className="p-6"> 
               <h3 className={`${mono.className} text-xs font-bold text-slate-500 uppercase mb-4`}>市场情绪</h3> 
-              <div className="h-40 bg-white/5 rounded-lg flex items-center justify-center border border-white/5"> 
+              <div className="h-48 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 relative overflow-hidden"> 
+                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05),transparent_70%)]" />
                  {/* 这里未来放 ECharts 雷达图 */} 
-                 <span className="text-xs text-slate-600">情绪雷达图占位符</span> 
+                 <span className="text-xs text-slate-600 font-mono">情绪雷达图占位符</span> 
               </div> 
-              <div className="mt-4 flex justify-between text-xs"> 
+              <div className="mt-4 flex justify-between text-xs font-mono"> 
                  <span className="text-slate-400">散户: <span className="text-(--signal-bear)">恐慌</span></span> 
                  <span className="text-slate-400">机构: <span className="text-(--signal-bull)">贪婪</span></span> 
               </div> 

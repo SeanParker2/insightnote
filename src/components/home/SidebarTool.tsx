@@ -2,13 +2,11 @@
 
 import { memo, useMemo, useState } from 'react';
 import { ButterflyEffect, EditorPick } from '@/lib/mock/tools.mock';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { trackEvent } from '@/lib/analytics';
 import { uiTerms } from '@/lib/utils';
 import { Terminal, ArrowRight, Zap, TrendingUp, Mail } from 'lucide-react';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 interface SidebarToolProps {
   butterflyEffects: ButterflyEffect[];

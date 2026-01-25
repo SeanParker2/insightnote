@@ -1,28 +1,19 @@
-// Mocking next/font/google
-// We accept options to match the API, even if we don't use them.
-export const Playfair_Display = (options?: unknown) => {
-  void options; // Prevent 'unused variable' linter error
-  return {
-    className: 'font-serif',
-    variable: '--font-playfair',
-    style: { fontFamily: 'serif' }
-  };
-};
+import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 
-export const Inter = (options?: unknown) => {
-  void options; // Prevent 'unused variable' linter error
-  return {
-    className: 'font-sans',
-    variable: '--font-inter',
-    style: { fontFamily: 'sans-serif' }
-  };
-};
+export const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
-export const JetBrains_Mono = (options?: unknown) => {
-  void options;
-  return {
-    className: 'font-mono',
-    variable: '--font-jetbrains',
-    style: { fontFamily: 'monospace' }
-  };
-};
+export const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
+export const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});

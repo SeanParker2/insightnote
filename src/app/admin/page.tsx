@@ -1,9 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
-import { Playfair_Display } from '@/lib/fonts';
+import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/server';
 import { AdminDashboardClient } from '@/components/admin/AdminDashboardClient';
-
-const playfair = Playfair_Display({ subsets: ['latin'] });
 
 export default async function AdminPage() {
   const supabase = await createClient();
