@@ -137,7 +137,7 @@ export default async function PostsPage() {
           <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
             暂时无法加载文章列表，请稍后重试。
             {loadError.message && (
-              <div className="mt-2 text-xs text-red-700 break-words">{loadError.message}</div>
+              <div className="mt-2 text-xs text-red-700 break-all">{loadError.message}</div>
             )}
           </div>
         )}

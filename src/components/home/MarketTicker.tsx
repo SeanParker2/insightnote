@@ -14,7 +14,12 @@ type MissingItem = {
   reason: string;
 };
 
-export const MarketTicker = memo(() => {
+type MarketTickerProps = {
+  className?: string;
+  transparent?: boolean;
+};
+
+export const MarketTicker = memo(({ className, transparent }: MarketTickerProps) => {
   const [items, setItems] = useState<MarketItem[]>([]);
   const [missing, setMissing] = useState<MissingItem[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -53,19 +58,25 @@ export const MarketTicker = memo(() => {
   }, []);
 
   return (
-    <div className="w-full bg-slate-950 border-b border-slate-800 text-xs font-mono tracking-wider py-2 overflow-hidden relative z-40 text-slate-300">
-      <div className="flex items-center w-full">
-        <div className="flex items-center gap-3 shrink-0 px-6 border-r border-slate-800 z-10 bg-slate-950 h-full">
-          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-          <span className="font-bold text-orange-500 uppercase tracking-widest">MARKET</span>
-        </div>
+    <div className={className || "w-full bg-slate-950 border-b border-slate-800 text-xs font-mono tracking-wider py-2 overflow-hidden relative z-40 text-slate-300"}>
+      <div className="flex items-center w-full h-full">
+        {!transparent && (
+          <div className="flex items-center gap-3 shrink-0 px-6 border-r border-slate-800 z-10 bg-slate-950 h-full">
+            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+            <span className="font-bold text-orange-500 uppercase tracking-widest">MARKET</span>
+          </div>
+        )}
         
-        <div className="flex-1 overflow-hidden relative flex items-center">
+        <div className="flex-1 overflow-hidden relative flex items-center h-full">
           {/* Gradient Masks */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+          {!transparent && (
+             <>
+               <div className="absolute left-0 top-0 bottom-0 w-8 bg-linear-to-r from-slate-950 to-transparent z-10" />
+               <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-l from-slate-950 to-transparent z-10" />
+             </>
+          )}
 
-          <div className="flex gap-12 overflow-x-auto no-scrollbar items-center animate-scroll hover:[animation-play-state:paused]">
+          <div className="flex gap-12 overflow-x-auto no-scrollbar items-center animate-scroll hover:paused">
             {items.length ? (
               // Duplicate items multiple times to ensure smooth infinite scroll on large screens
               [...items, ...items, ...items, ...items].map((item, idx) => (
@@ -81,7 +92,7 @@ export const MarketTicker = memo(() => {
                 </span>
               ))
             ) : (
-              <span className="text-slate-500 whitespace-nowrap pl-4">{loadError ? loadError : 'INITIALIZING MARKET DATA STREAM...'}</span>
+              <span className="text-slate-500 whitespace-nowrap pl-4">{loadError ? loadError : '正在初始化市场数据流...'}</span>
             )}
           </div>
         </div>

@@ -161,7 +161,7 @@ export default async function PostPage({ params }: { params: PostRouteParams }) 
         <div className="min-h-screen bg-white py-20">
           <div className="max-w-2xl mx-auto px-6">
             <h1 className={`${playfair.className} text-3xl font-bold text-slate-900`}>暂时无法加载文章</h1>
-            <p className="mt-4 text-sm text-slate-600 break-words">
+            <p className="mt-4 text-sm text-slate-600 break-all">
               {typeof rowError?.message === 'string' ? rowError.message : 'post_fetch_failed'}
             </p>
             <div className="mt-8 flex items-center gap-4">

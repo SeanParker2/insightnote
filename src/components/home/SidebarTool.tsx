@@ -72,7 +72,7 @@ export const SidebarTool = memo(({ butterflyEffects, editorPicks }: SidebarToolP
       <div className="space-y-12">
         {/* Butterfly Effect Map Widget - Terminal Style */}
         <div className="relative group">
-           <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+           <div className="absolute -inset-1 bg-linear-to-r from-orange-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
            
            <div className="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
               {/* Terminal Header */}
@@ -80,7 +80,7 @@ export const SidebarTool = memo(({ butterflyEffects, editorPicks }: SidebarToolP
                 <div className="flex items-center gap-2">
                    <Terminal className="w-4 h-4 text-orange-500" />
                    <span className="text-[10px] font-mono text-slate-400 font-bold tracking-widest uppercase">
-                      InsightNote Terminal
+                      InsightNote 终端
                    </span>
                 </div>
                 <div className="flex gap-1.5">
@@ -101,7 +101,7 @@ export const SidebarTool = memo(({ butterflyEffects, editorPicks }: SidebarToolP
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                        </span>
-                       <span className="text-[10px] text-emerald-500 font-mono">LIVE</span>
+                       <span className="text-[10px] text-emerald-500 font-mono">实时</span>
                     </div>
                  </div>
 
@@ -136,7 +136,7 @@ export const SidebarTool = memo(({ butterflyEffects, editorPicks }: SidebarToolP
         <div>
           <div className="flex items-center gap-2 mb-6 border-b border-border/50 pb-2">
              <TrendingUp className="w-4 h-4 text-primary" />
-             <h3 className="font-bold text-sm tracking-tight text-foreground uppercase">Research Briefs</h3>
+             <h3 className="font-bold text-sm tracking-tight text-foreground uppercase">研报简讯</h3>
           </div>
           
           <ul className="space-y-6">

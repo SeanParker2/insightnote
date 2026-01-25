@@ -31,8 +31,8 @@ export const FeaturedPost = memo(({ post, heroImage = '/images/hero-bg.jpg' }: F
             className="object-cover transition-transform duration-1000 group-hover:scale-105"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-linear-to-t from-black via-black/50 to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/80 via-transparent to-transparent opacity-80" />
         </div>
 
         {/* Content Overlay */}
@@ -76,12 +76,12 @@ export const FeaturedPost = memo(({ post, heroImage = '/images/hero-bg.jpg' }: F
               <div className="hidden lg:block lg:col-span-1">
                  <div className="bg-slate-950/80 backdrop-blur-md border border-slate-800 rounded-lg p-6 hover:bg-slate-900/90 transition-colors duration-500 group/chart">
                     <div className="flex justify-between items-start mb-6">
-                      <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold font-mono">MARKET IMPACT</div>
+                      <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold font-mono">市场影响</div>
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                     </div>
                     <div className="flex items-baseline gap-2 mb-6">
                        <span className="text-4xl font-bold text-white tracking-tighter tabular-nums font-mono">+12.4%</span>
-                       <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">↑ YTD</span>
+                       <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">↑ 年初至今</span>
                     </div>
                     <div className="h-24 flex items-end gap-1">
                       {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95].map((height, i) => (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from '@/lib/fonts';
+import { Inter, Playfair_Display, JetBrains_Mono } from '@/lib/fonts';
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -16,6 +16,12 @@ const inter = Inter({
   display: "swap",
 });
 
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "InsightNote｜专业金融洞察",
   description: "深度解读财报与市场变化，提供可复用的研究框架与分析。",
@@ -27,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" className="dark">
       <body
-        className={`${inter.variable} ${playfair.variable} antialiased min-h-screen flex flex-col font-sans bg-background text-foreground`}
+        className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} antialiased min-h-screen flex flex-col font-sans bg-background text-foreground`}
       >
         <Header />
         <main className="flex-1">{children}</main>

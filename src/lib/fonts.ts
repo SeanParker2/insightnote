@@ -17,3 +17,12 @@ export const Inter = (options?: unknown) => {
     style: { fontFamily: 'sans-serif' }
   };
 };
+
+export const JetBrains_Mono = (options?: unknown) => {
+  void options;
+  return {
+    className: 'font-mono',
+    variable: '--font-jetbrains',
+    style: { fontFamily: 'monospace' }
+  };
+};

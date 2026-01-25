@@ -10,6 +10,7 @@
   
   /* Fonts */
   --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
   /* Removed serif font to strictly enforce modern sans-serif aesthetic */
 
   /* Semantic Colors - Minimalist Palette */
@@ -50,6 +51,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --sidebar-ring: var(--sidebar-ring);
 }
 
 :root {
@@ -97,25 +99,25 @@
 
 .dark {
   /* Modern Minimalist Dark Theme */
-  --background: #09090b; /* Zinc 950 */
-  --foreground: #fafafa; /* Zinc 50 */
+  --background: #0B1120; /* Midnight Navy */
+  --foreground: #cbd5e1; /* Slate 300 */
   
-  --card: #09090b;
-  --card-foreground: #fafafa;
-  --popover: #09090b;
-  --popover-foreground: #fafafa;
+  --card: #0B1120;
+  --card-foreground: #cbd5e1;
+  --popover: #0B1120;
+  --popover-foreground: #cbd5e1;
   --primary: #fafafa;
   --primary-foreground: #18181b;
-  --secondary: #27272a; /* Zinc 800 */
+  --secondary: #1e293b; /* Slate 800 */
   --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa; /* Zinc 400 */
-  --accent: #27272a;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8; /* Slate 400 */
+  --accent: #1e293b;
   --accent-foreground: #fafafa;
   --destructive: #7f1d1d;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4d4d8; /* Zinc 300 */
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #cbd5e1; /* Slate 300 */
   
   --chart-1: #3b82f6;
   --chart-2: #34d399;
@@ -134,14 +136,42 @@
 }
 
 @layer base {
+  :root {
+    /* 背景：深邃的蓝黑，而非纯黑 */
+    --bg-obsidian: #030712;
+    --bg-layer-1: #0B1221;
+    --bg-layer-2: #151e32;
+    
+    /* 强调色：霓虹绿 (看多) / 信号红 (看空) / 奢华金 (VIP) */
+    --signal-bull: #00F090;
+    --signal-bear: #FF2E54;
+    --accent-gold: #F5D90A;
+    
+    /* 边框：极细微的光 */
+    --border-glass: rgba(255, 255, 255, 0.08);
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-(--bg-obsidian) text-slate-300 antialiased selection:bg-(--signal-bull) selection:text-black;
+    background-image: radial-gradient(circle at 50% 0%, rgba(11, 25, 45, 0.6) 0%, transparent 60%);
   }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans tracking-tight;
+  }
+
+  /* 实用类：黑曜石玻璃感 */
+  .obsidian-card {
+    @apply bg-(--bg-layer-1)/60 backdrop-blur-xl border border-(--border-glass) shadow-2xl;
+  }
+  
+  /* 实用类：微光文字 */
+  .text-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   }
 }
 

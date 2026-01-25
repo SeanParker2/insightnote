@@ -105,7 +105,7 @@ export const LatestIntelligence = memo(({ posts }: LatestIntelligenceProps) => {
         </h3>
         {lastUpdatedLabel && (
           <span className="text-[10px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-800">
-            UPDATED: {lastUpdatedLabel}
+            已更新: {lastUpdatedLabel}
           </span>
         )}
       </div>
@@ -131,8 +131,8 @@ export const LatestIntelligence = memo(({ posts }: LatestIntelligenceProps) => {
                         alt="" 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-60"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-linear-to-t from-background via-background/90 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
 
                 {/* Content */}
@@ -141,7 +141,7 @@ export const LatestIntelligence = memo(({ posts }: LatestIntelligenceProps) => {
                     <div className="flex flex-wrap items-center gap-2 mb-3 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100">
                          {post.is_premium && (
                             <span className="bg-brand-gold/20 text-brand-gold text-[10px] px-2 py-0.5 rounded-full border border-brand-gold/30 flex items-center gap-1 backdrop-blur-md">
-                                <Lock className="w-3 h-3" /> VIP
+                                <Lock className="w-3 h-3" /> 会员
                             </span>
                         )}
                         <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 backdrop-blur-md">
