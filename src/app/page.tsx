@@ -3,6 +3,7 @@ import { FeaturedPost } from '@/components/home/FeaturedPost';
 import { LatestIntelligence } from '@/components/home/LatestIntelligence';
 import { SidebarTool } from '@/components/home/SidebarTool';
 import { butterflyEffects } from '@/lib/mock/tools.mock';
+import { heroArticle, latestFeed } from '@/lib/mock/feed.mock';
 import { createClient } from '@/lib/supabase/server';
 import { PostListItem } from '@/types';
 
@@ -47,7 +48,7 @@ export default async function Home() {
 
   const primary = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags')
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty')
     .order('published_at', { ascending: false });
 
   if (!primary.error) {
@@ -61,6 +62,9 @@ export default async function Home() {
       source_institution: row.source_institution ?? null,
       source_date: row.source_date ?? null,
       tags: normalizeTags(row.tags),
+      sentiment: row.sentiment ?? null,
+      related_tickers: normalizeTags(row.related_tickers),
+      difficulty: row.difficulty ?? null,
     }));
   } else {
     const isMissingSummary =
@@ -94,6 +98,9 @@ export default async function Home() {
           source_institution: row.source_institution ?? row.institution ?? null,
           source_date: row.source_date ?? null,
           tags: normalizeTags(row.tags ?? row.topics ?? row.labels),
+          sentiment: row.sentiment ?? null,
+          related_tickers: normalizeTags(row.related_tickers),
+          difficulty: row.difficulty ?? null,
         }));
       } else {
         loadError = fallback.error;
@@ -105,10 +112,42 @@ export default async function Home() {
 
   if (loadError) {
     console.error('Error fetching posts:', loadError);
+    // Fallback to mock data
+    const mockHero: PostListItem = {
+      id: heroArticle.id,
+      slug: 'mock-hero',
+      title: heroArticle.title,
+      summary_tldr: '随着人工智能技术的指数级增长，数据中心对电力的需求正在重塑公用事业板块的估值模型。高盛预测，到 2030 年，AI 将推动数据中心电力需求增长 160%。',
+      is_premium: false,
+      published_at: new Date().toISOString(),
+      source_institution: heroArticle.author || '高盛',
+      source_date: new Date().toISOString(),
+      tags: ['宏观', '公用事业'],
+      sentiment: 'bullish',
+      related_tickers: ['NVDA', 'XLU'],
+      difficulty: 'medium',
+    };
+
+    const mockFeed: PostListItem[] = latestFeed.map((item) => ({
+      id: item.id,
+      slug: `mock-${item.id}`,
+      title: item.title,
+      summary_tldr: item.summary,
+      is_premium: item.isPro || false,
+      published_at: new Date().toISOString(),
+      source_institution: '摩根士丹利',
+      source_date: new Date().toISOString(),
+      tags: [item.category || '综合'],
+      sentiment: 'neutral',
+      related_tickers: [],
+      difficulty: 'medium',
+    }));
+
+    items = [mockHero, ...mockFeed];
   }
 
   const hasLoadError = Boolean(loadError);
-  const allPosts = (!hasLoadError ? items : []) || [];
+  const allPosts = items;
   const featuredPost = allPosts.length > 0 ? allPosts[0] : null;
   const latestPosts = allPosts.length > 1 ? allPosts.slice(1) : [];
   const editorPicksFromPosts = allPosts.slice(1, 3).map((p) => ({
@@ -118,55 +157,48 @@ export default async function Home() {
   }));
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-brand-paper dark:bg-brand-navy transition-colors duration-500">
       {/* 1. Market Ticker */}
       <MarketTicker />
       
-      {/* Main Content Grid */}
-      <main className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-12 gap-10">
+      {/* Main Content */}
+      <div className="bg-background min-h-screen">
         
-        {/* Left Column (8/12) */}
-        <div className="col-span-12 lg:col-span-8">
-          {hasLoadError && (
-            <div className="mb-10 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              首页内容加载失败，请刷新重试或稍后再来。{' '}
-              <a href="/" className="underline underline-offset-2">
-                刷新
-              </a>
-              {' · '}
-              <a href="/posts" className="underline underline-offset-2">
-                去文章列表
-              </a>
-              {loadError?.message && (
-                <div className="mt-2 text-xs text-red-700 break-words">
-                  {loadError.message}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* 2. Featured Post (Hero) */}
-          {featuredPost ? (
-            <FeaturedPost post={featuredPost} />
-          ) : (
-            <div className="mb-12 pb-12 border-b border-solid border-gray-200 text-center text-slate-500">
-              {hasLoadError ? '无法加载内容' : '加载中…'}
-            </div>
-          )}
-          
-          {/* 3. Latest Intelligence (Feed) */}
-          <LatestIntelligence posts={latestPosts} />
-          
-        </div>
+        {/* Full Width Hero Section */}
+        {featuredPost && (
+           <div className="container-width px-6 pt-8 pb-4">
+             <FeaturedPost post={featuredPost} />
+           </div>
+        )}
 
-        {/* Right Column (4/12) - Sidebar */}
-        {/* 4. Sidebar Tools */}
-        <SidebarTool 
-          butterflyEffects={butterflyEffects} 
-          editorPicks={editorPicksFromPosts} 
-        />
-        
-      </main>
+        <main className="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-12 gap-12">
+          
+          {/* Left Column (8/12) */}
+          <div className="col-span-12 lg:col-span-8">
+            {hasLoadError && (
+              <div className="mb-10 border border-brand-red/20 bg-brand-red/5 px-6 py-4 rounded-xl text-sm text-brand-red flex items-center gap-4">
+                <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse"></span>
+                <span>
+                  首页内容加载失败，已启用离线预览模式。
+                  <a href="/" className="underline underline-offset-4 ml-2 font-bold hover:text-brand-red/80">刷新重试</a>
+                </span>
+              </div>
+            )}
+            
+            {/* 3. Latest Intelligence (Feed) */}
+            <LatestIntelligence posts={latestPosts} />
+            
+          </div>
+
+          {/* Right Column (4/12) - Sidebar */}
+          {/* 4. Sidebar Tools */}
+          <SidebarTool 
+            butterflyEffects={butterflyEffects} 
+            editorPicks={editorPicksFromPosts} 
+          />
+          
+        </main>
+      </div>
     </div>
   );
 }

@@ -60,6 +60,9 @@ While tech multiples have expanded to >30x forward earnings, the utility sector 
   source_institution: "Goldman Sachs GIR",
   source_date: new Date("2025-12-10"),
   tags: ["Utilities", "AI Infrastructure", "Nuclear"],
+  sentiment: 'bullish',
+  related_tickers: ['VST', 'CEG', 'ETN'],
+  difficulty: 'medium',
   created_at: new Date(),
   updated_at: new Date(),
   butterfly_nodes: [

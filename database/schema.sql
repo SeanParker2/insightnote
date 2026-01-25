@@ -31,6 +31,9 @@ CREATE TABLE posts (
   source_institution VARCHAR(100),
   source_date DATE,
   tags VARCHAR(100)[] DEFAULT ARRAY[]::VARCHAR(100)[],
+  sentiment TEXT CHECK (sentiment IN ('bullish', 'bearish', 'neutral')),
+  related_tickers TEXT[] DEFAULT ARRAY[]::TEXT[],
+  difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -226,7 +229,10 @@ SELECT
   p.published_at,
   p.source_institution,
   p.source_date,
-  p.tags
+  p.tags,
+  p.sentiment,
+  p.related_tickers,
+  p.difficulty
 FROM posts p;
 
 CREATE OR REPLACE VIEW posts_secure AS
@@ -245,6 +251,9 @@ SELECT
   p.source_institution,
   p.source_date,
   p.tags,
+  p.sentiment,
+  p.related_tickers,
+  p.difficulty,
   p.created_at,
   p.updated_at
 FROM posts p

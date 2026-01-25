@@ -51,7 +51,7 @@ export default async function PostsPage() {
 
   const primary = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags')
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty')
     .order('published_at', { ascending: false });
 
   if (!primary.error) {
@@ -65,6 +65,9 @@ export default async function PostsPage() {
       source_institution: row.source_institution ?? null,
       source_date: row.source_date ?? null,
       tags: normalizeTags(row.tags),
+      sentiment: row.sentiment ?? null,
+      related_tickers: normalizeTags(row.related_tickers),
+      difficulty: row.difficulty ?? null,
     }));
   } else {
     const isMissingSummary =
@@ -98,6 +101,9 @@ export default async function PostsPage() {
           source_institution: row.source_institution ?? row.institution ?? null,
           source_date: row.source_date ?? null,
           tags: normalizeTags(row.tags ?? row.topics ?? row.labels),
+          sentiment: row.sentiment ?? null,
+          related_tickers: normalizeTags(row.related_tickers),
+          difficulty: row.difficulty ?? null,
         }));
       } else {
         loadError = fallback.error;
@@ -165,10 +171,10 @@ export default async function PostsPage() {
                       </>
                     )}
                     {post.is_premium && (
-                      <span className="ml-1 inline-flex items-center gap-1 rounded border border-brand-gold/40 bg-brand-gold/10 px-2 py-0.5 text-[9px] text-brand-900">
-                        <Lock className="w-3 h-3" /> Pro
-                      </span>
-                    )}
+                  <span className="ml-1 inline-flex items-center gap-1 rounded border border-brand-gold/40 bg-brand-gold/10 px-2 py-0.5 text-[9px] text-brand-900">
+                    <Lock className="w-3 h-3" /> 专业版
+                  </span>
+                )}
                   </div>
 
                   <h2 className={`${playfair.className} mt-3 text-2xl font-bold text-slate-900`}>

@@ -98,76 +98,68 @@ export const LatestIntelligence = memo(({ posts }: LatestIntelligenceProps) => {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center pb-2 border-b border-black">
-        <div className="flex flex-col">
-          <h3 className="font-bold text-sm tracking-widest uppercase">{uiTerms.latestIntelligence}</h3>
-          <div className="mt-1 flex items-center gap-3 text-[11px] text-slate-500">
-            <button
-              type="button"
-              onClick={() => void refresh('manual')}
-              disabled={refreshing}
-              className="underline underline-offset-2 disabled:opacity-50"
-            >
-              {refreshing ? '刷新中…' : '刷新'}
-            </button>
-            {lastUpdatedLabel && <span>更新于 {lastUpdatedLabel}</span>}
-            {loadError && <span className="text-red-600">{loadError}</span>}
-          </div>
-        </div>
-        <TrackedLink
-          href="/posts"
-          className="text-xs font-bold text-amber-500 hover:text-brand-900 transition-colors"
-          eventName="home_view_all_posts_click"
-        >
-          {uiTerms.viewAll} →
-        </TrackedLink>
+      <div className="flex items-center justify-between pb-4 border-b border-border">
+        <h3 className="text-lg font-semibold tracking-tight">{uiTerms.latestIntelligence}</h3>
+        {lastUpdatedLabel && (
+          <span className="text-xs text-muted-foreground">
+            更新于 {lastUpdatedLabel}
+          </span>
+        )}
       </div>
 
-      {items.map((post) => (
-        <TrackedLink
-          href={`/posts/${post.slug}`}
-          key={post.id}
-          eventName="home_latest_post_click"
-          eventPayload={{ slug: post.slug, is_premium: post.is_premium, source_institution: post.source_institution }}
-        >
-          <div 
-            className={`group cursor-pointer ${post.is_premium ? 'opacity-90 hover:opacity-100 transition duration-300' : ''}`}
-          >
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-3 text-right pt-1">
-                <span className="block text-xs font-bold text-slate-900">
-                  {formatDateCN(post.published_at)}
+      <div className="grid gap-8">
+        {items.map((post) => (
+          <article key={post.id} className="group relative flex flex-col md:flex-row gap-6 items-start">
+            {/* Thumbnail */}
+            <div className="w-full md:w-48 aspect-video md:aspect-[4/3] relative rounded-lg overflow-hidden bg-muted flex-shrink-0">
+               {/* Use random-like tech images or a placeholder if real image not available */}
+               <img 
+                 src="/images/tech-thumb.jpg" 
+                 alt="" 
+                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-90 group-hover:opacity-100"
+               />
+               {post.is_premium && (
+                 <div className="absolute top-2 left-2 bg-black/60 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded border border-white/20 flex items-center gap-1">
+                   <Lock className="w-3 h-3" />
+                   <span>VIP</span>
+                 </div>
+               )}
+            </div>
+
+            <div className="flex-1 min-w-0 py-1">
+              <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                <span className="font-medium text-primary bg-primary/5 px-1.5 py-0.5 rounded">
+                   {post.source_institution || 'InsightNote'}
                 </span>
-                {post.tags && post.tags.length > 0 && (
-                  <span className="block text-[10px] text-slate-400 uppercase mt-1">
-                    {post.tags[0]}
-                  </span>
-                )}
-                {post.is_premium && (
-                  <span className="inline-block mt-1 border border-brand-900 text-brand-900 text-[9px] font-bold px-1 py-px uppercase">
-                    {uiTerms.proOnly}
-                  </span>
-                )}
+                <span>•</span>
+                <time dateTime={post.published_at instanceof Date ? post.published_at.toISOString() : post.published_at}>{formatDateCN(post.published_at)}</time>
               </div>
-              
-              <div className="col-span-9 border-l border-solid border-gray-200 pl-6 relative">
-                {!post.is_premium && (
-                  <div className="absolute -left-[3px] top-2 w-[5px] h-[5px] rounded-full bg-slate-300 group-hover:bg-amber-500 transition"></div>
-                )}
-                
-                <h4 className={`${playfair.className} text-xl font-bold text-slate-900 mb-2 group-hover:text-brand-900/80 flex items-center gap-2`}>
-                  {post.is_premium && <Lock className="w-4 h-4 text-slate-400" />}
+
+              <h4 className="text-xl font-bold leading-tight mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                <TrackedLink 
+                  href={`/posts/${post.slug}`}
+                  eventName="home_post_click"
+                  eventPayload={{ slug: post.slug }}
+                >
                   {post.title}
-                </h4>
-                
-                <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
-                  {post.summary_tldr || '暂无摘要'}
-                </p>
+                </TrackedLink>
+              </h4>
+
+              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-3">
+                {post.summary_tldr || '暂无摘要'}
+              </p>
+
+              <div className="flex items-center gap-2">
+                {post.tags?.slice(0, 3).map(tag => (
+                  <span key={tag} className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border px-1.5 py-0.5 rounded hover:border-primary hover:text-primary transition-colors cursor-default">
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
-        </TrackedLink>
-      ))}
+          </article>
+        ))}
+      </div>
     </div>
   );
 });

@@ -22,40 +22,43 @@ export async function Header() {
   const isAdmin = Boolean((profile as any)?.is_admin);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full bg-background border-b border-border">
+      <div className="container-width flex h-14 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="font-serif text-2xl font-bold tracking-tight text-brand-900">
+          <div className="w-5 h-5 bg-primary rounded-sm"></div>
+          <span className="font-sans text-lg font-bold tracking-tight text-foreground">
             InsightNote
           </span>
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-6">
           {isAdmin ? (
-            <Button asChild variant="ghost" className="text-sm font-medium">
+            <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground h-auto p-0 hover:bg-transparent">
               <TrackedLink href="/admin" eventName="header_admin_click">
                 管理后台
               </TrackedLink>
             </Button>
           ) : null}
           {!user ? (
-            <Button asChild variant="ghost" className="text-sm font-medium">
+            <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground h-auto p-0 hover:bg-transparent">
               <TrackedLink href="/signup" eventName="header_signup_click">
                 注册
               </TrackedLink>
             </Button>
           ) : null}
-          <Button asChild variant="ghost" className="text-sm font-medium">
+          <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground h-auto p-0 hover:bg-transparent">
             <TrackedLink href="/pricing" eventName="header_pricing_click">
-              订阅
+              订阅方案
             </TrackedLink>
           </Button>
-          <Button asChild variant="ghost" className="text-sm font-medium">
+          <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground h-auto p-0 hover:bg-transparent">
             <Link href="/feedback">反馈</Link>
           </Button>
-          <LoginControl
-            initialEmail={user?.email ?? null}
-            initialSubscriptionStatus={isProActive ? 'pro' : 'free'}
-          />
+          <div className="pl-2 border-l border-border ml-2">
+            <LoginControl
+              initialEmail={user?.email ?? null}
+              initialSubscriptionStatus={isProActive ? 'pro' : 'free'}
+            />
+          </div>
         </nav>
       </div>
     </header>

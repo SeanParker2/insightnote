@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { trackEvent } from '@/lib/analytics';
+import { analyzeContent } from '@/lib/ai-helper';
+import { ButterflyNode } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type PostRow = {
   id: string;
@@ -15,7 +18,29 @@ type PostRow = {
   is_premium: boolean;
   published_at: string;
   updated_at: string;
+  sentiment?: string;
 };
+
+// Database response types to avoid 'any'
+interface DbPostMinimal {
+  id: string;
+  slug: string | null;
+  title: string | null;
+  is_premium: boolean | null;
+  published_at: string | null;
+  updated_at: string | null;
+}
+
+interface DbPostFull extends DbPostMinimal {
+  summary_tldr: string | null;
+  content_mdx?: string | null;
+  source_institution: string | null;
+  source_date: string | null;
+  tags: string[] | null;
+  sentiment: 'bullish' | 'bearish' | 'neutral' | null;
+  related_tickers: string[] | null;
+  difficulty: 'easy' | 'medium' | 'hard' | null;
+}
 
 function normalizeSlug(value: string) {
   return value
@@ -71,8 +96,15 @@ export function AdminDashboardClient() {
   const [tags, setTags] = useState('');
   const [teaserMdx, setTeaserMdx] = useState('');
   const [fullMdx, setFullMdx] = useState('');
+  
+  // New fields
+  const [sentiment, setSentiment] = useState<'bullish' | 'bearish' | 'neutral' | ''>('');
+  const [relatedTickers, setRelatedTickers] = useState('');
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | ''>('');
+  const [butterflyNodes, setButterflyNodes] = useState<ButterflyNode[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const selectedRow = useMemo(() => rows.find((r) => r.id === selectedId) ?? null, [rows, selectedId]);
+  const selectedRow = useMemo(() => rows.find((r: PostRow) => r.id === selectedId) ?? null, [rows, selectedId]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -85,7 +117,7 @@ export function AdminDashboardClient() {
         .limit(80);
       if (error) throw error;
       setRows(
-        (Array.isArray(data) ? data : []).map((r: any) => ({
+        (Array.isArray(data) ? data : []).map((r: DbPostMinimal) => ({
           id: String(r.id),
           slug: String(r.slug ?? ''),
           title: String(r.title ?? ''),
@@ -94,8 +126,9 @@ export function AdminDashboardClient() {
           updated_at: String(r.updated_at ?? ''),
         })),
       );
-    } catch (err: any) {
-      setLoadError(typeof err?.message === 'string' ? err.message : '加载失败');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '加载失败';
+      setLoadError(message);
     } finally {
       setLoading(false);
     }
@@ -107,39 +140,53 @@ export function AdminDashboardClient() {
       setSaveError(null);
       setSaveSuccess(null);
       try {
-        const { data: p, error: pError } = await supabase.from('posts').select('*').eq('id', postId).maybeSingle();
+        const { data: pData, error: pError } = await supabase.from('posts').select('*').eq('id', postId).maybeSingle();
         if (pError) throw pError;
-        if (!p) throw new Error('post_not_found');
+        if (!pData) throw new Error('post_not_found');
+        
+        const p = pData as unknown as DbPostFull;
 
         const { data: c, error: cError } = await supabase.from('post_contents').select('content_mdx').eq('post_id', postId).maybeSingle();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (cError && (cError as any)?.code !== 'PGRST116') throw cError;
 
-        const slugValue = typeof (p as any).slug === 'string' ? (p as any).slug : '';
-        const titleValue = typeof (p as any).title === 'string' ? (p as any).title : '';
-        const summaryValue = typeof (p as any).summary_tldr === 'string' ? (p as any).summary_tldr : '';
-        const teaserValue = typeof (p as any).content_mdx === 'string' ? (p as any).content_mdx : '';
-        const fullValue = typeof (c as any)?.content_mdx === 'string' ? (c as any).content_mdx : teaserValue;
-        const published = typeof (p as any).published_at === 'string' ? (p as any).published_at : '';
-        const inst = typeof (p as any).source_institution === 'string' ? (p as any).source_institution : '';
-        const sourceDateValue = typeof (p as any).source_date === 'string' ? (p as any).source_date : '';
-        const tagArray = Array.isArray((p as any).tags) ? ((p as any).tags as unknown[]) : [];
+        const slugValue = typeof p.slug === 'string' ? p.slug : '';
+        const titleValue = typeof p.title === 'string' ? p.title : '';
+        const summaryValue = typeof p.summary_tldr === 'string' ? p.summary_tldr : '';
+        const teaserValue = typeof p.content_mdx === 'string' ? p.content_mdx : '';
+        const fullValue = typeof c?.content_mdx === 'string' ? c.content_mdx : teaserValue;
+        const published = typeof p.published_at === 'string' ? p.published_at : '';
+        const inst = typeof p.source_institution === 'string' ? p.source_institution : '';
+        const sourceDateValue = typeof p.source_date === 'string' ? p.source_date : '';
+        const tagArray = Array.isArray(p.tags) ? (p.tags as unknown[]) : [];
         const tagText = tagArray.filter((t): t is string => typeof t === 'string').join(', ');
+        
+        // Load butterfly nodes
+        const { data: nodesData } = await supabase.from('butterfly_nodes').select('*').eq('post_id', postId);
+        setButterflyNodes((nodesData as unknown as ButterflyNode[]) || []);
 
         setSlug(slugValue);
         setTitle(titleValue);
         setSummaryTldr(summaryValue);
-        setIsPremium(Boolean((p as any).is_premium));
+        setIsPremium(Boolean(p.is_premium));
         setPublishedAt(published ? toLocalDatetimeInputValue(published) : '');
         setSourceInstitution(inst);
         setSourceDate(sourceDateValue);
         setTags(tagText);
+        
+        // New fields
+        setSentiment(p.sentiment || '');
+        setRelatedTickers((p.related_tickers || []).join(', '));
+        setDifficulty(p.difficulty || '');
+        
         setTeaserMdx(teaserValue);
         setFullMdx(fullValue);
 
         trackEvent('admin_post_open', { has_post: true });
-      } catch (err: any) {
-        setSaveError(typeof err?.message === 'string' ? err.message : '加载详情失败');
-        trackEvent('admin_post_open_error', { message: typeof err?.message === 'string' ? err.message : 'unknown' });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '加载详情失败';
+        setSaveError(message);
+        trackEvent('admin_post_open_error', { message });
       } finally {
         setSaving(false);
       }
@@ -161,6 +208,10 @@ export function AdminDashboardClient() {
     setSourceInstitution('');
     setSourceDate('');
     setTags('');
+    setSentiment('');
+    setRelatedTickers('');
+    setDifficulty('');
+    setButterflyNodes([]);
     setTeaserMdx('');
     setFullMdx('');
     setSaveError(null);
@@ -198,6 +249,9 @@ export function AdminDashboardClient() {
           source_institution: sourceInstitution.trim() || null,
           source_date: sourceDate.trim() || null,
           tags: tagList,
+          sentiment: sentiment || null,
+          related_tickers: splitTags(relatedTickers),
+          difficulty: difficulty || null,
           updated_at: now,
         })
         .select('id')
@@ -220,13 +274,32 @@ export function AdminDashboardClient() {
       setSlug(nextSlug);
       trackEvent('admin_post_create_success', {});
       await loadPosts();
-    } catch (err: any) {
-      setSaveError(typeof err?.message === 'string' ? err.message : '创建失败');
-      trackEvent('admin_post_create_error', { message: typeof err?.message === 'string' ? err.message : 'unknown' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '创建失败';
+      setSaveError(message);
+      trackEvent('admin_post_create_error', { message });
     } finally {
       setSaving(false);
     }
   }, [fullMdx, isPremium, loadPosts, publishedAt, slug, sourceDate, sourceInstitution, summaryTldr, supabase, tags, teaserMdx, title]);
+
+  const onAnalyze = useCallback(async () => {
+    if (!fullMdx && !teaserMdx) return;
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeContent(fullMdx || teaserMdx);
+      setSummaryTldr(result.summary_tldr);
+      setTags(result.tags.join(', '));
+      setSentiment(result.sentiment);
+      setRelatedTickers(result.related_tickers.join(', '));
+      setDifficulty(result.difficulty);
+      setSaveSuccess('AI分析完成');
+    } catch (err) {
+      setSaveError('AI分析失败');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [fullMdx, teaserMdx]);
 
   const onSave = useCallback(async () => {
     if (!selectedId) return;
@@ -260,6 +333,9 @@ export function AdminDashboardClient() {
           source_institution: sourceInstitution.trim() || null,
           source_date: sourceDate.trim() || null,
           tags: tagList,
+          sentiment: sentiment || null,
+          related_tickers: splitTags(relatedTickers),
+          difficulty: difficulty || null,
           updated_at: now,
         })
         .eq('id', selectedId);
@@ -305,6 +381,36 @@ export function AdminDashboardClient() {
       setSaving(false);
     }
   }, [loadPosts, resetEditor, selectedId, supabase]);
+
+  const onSaveNode = useCallback(async (label: string, type: string, parentId: string | null) => {
+    if (!selectedId) return;
+    try {
+      const { error } = await supabase.from('butterfly_nodes').insert({
+        post_id: selectedId,
+        label,
+        type,
+        parent_id: parentId || null,
+      });
+      if (error) throw error;
+      const { data } = await supabase.from('butterfly_nodes').select('*').eq('post_id', selectedId);
+      setButterflyNodes((data as unknown as ButterflyNode[]) || []);
+      setSaveSuccess('节点已添加');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '未知错误';
+      setSaveError(message);
+    }
+  }, [selectedId, supabase]);
+
+  const onDeleteNode = useCallback(async (nodeId: string) => {
+    try {
+      const { error } = await supabase.from('butterfly_nodes').delete().eq('id', nodeId);
+      if (error) throw error;
+      setButterflyNodes((prev: ButterflyNode[]) => prev.filter((n: ButterflyNode) => n.id !== nodeId));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '未知错误';
+      setSaveError(message);
+    }
+  }, [supabase]);
 
   const onPublishNow = useCallback(() => {
     const now = new Date();
@@ -358,7 +464,7 @@ export function AdminDashboardClient() {
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => {
+              rows.map((r: PostRow) => {
                 const selected = r.id === selectedId;
                 return (
                   <TableRow
@@ -377,7 +483,7 @@ export function AdminDashboardClient() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {r.is_premium ? <Badge>Pro</Badge> : <Badge variant="outline">免费</Badge>}
+                        {r.is_premium ? <Badge>专业版</Badge> : <Badge variant="outline">免费</Badge>}
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-slate-600">{r.published_at ? r.published_at.slice(0, 10) : '—'}</TableCell>
@@ -400,6 +506,13 @@ export function AdminDashboardClient() {
                 </TrackedLink>
               </Button>
             ) : null}
+            <Button
+              variant="outline"
+              onClick={() => void onAnalyze()}
+              disabled={isAnalyzing || (!fullMdx && !teaserMdx)}
+            >
+              {isAnalyzing ? '分析中…' : '✨ AI 分析'}
+            </Button>
             <Button variant="outline" onClick={onPublishNow} disabled={saving}>
               设为现在发布
             </Button>
@@ -445,7 +558,7 @@ export function AdminDashboardClient() {
             <textarea
               className="min-h-[80px] rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus-visible:border-slate-400"
               value={summaryTldr}
-              onChange={(e) => setSummaryTldr(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSummaryTldr(e.target.value)}
               placeholder="一句话要点摘要"
             />
           </label>
@@ -469,7 +582,7 @@ export function AdminDashboardClient() {
                 type="datetime-local"
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
                 value={publishedAt}
-                onChange={(e) => setPublishedAt(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPublishedAt(e.target.value)}
               />
             </label>
           </div>
@@ -480,7 +593,7 @@ export function AdminDashboardClient() {
               <input
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
                 value={sourceInstitution}
-                onChange={(e) => setSourceInstitution(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSourceInstitution(e.target.value)}
                 placeholder="例如 Goldman Sachs"
               />
             </label>
@@ -490,7 +603,7 @@ export function AdminDashboardClient() {
                 type="date"
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
                 value={sourceDate}
-                onChange={(e) => setSourceDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSourceDate(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
@@ -501,6 +614,41 @@ export function AdminDashboardClient() {
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="AI, Utilities, Macro"
               />
+            </label>
+            <label className="flex flex-col gap-2 md:col-span-1">
+              <span className="text-sm font-medium text-slate-700">关联标的</span>
+              <input
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                value={relatedTickers}
+                onChange={(e) => setRelatedTickers(e.target.value)}
+                placeholder="AAPL, BTC"
+              />
+            </label>
+            <label className="flex flex-col gap-2 md:col-span-1">
+              <span className="text-sm font-medium text-slate-700">情绪</span>
+              <select
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                value={sentiment}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSentiment(e.target.value as any)}
+              >
+                <option value="">未选择</option>
+                <option value="bullish">看多 (Bullish)</option>
+                <option value="bearish">看空 (Bearish)</option>
+                <option value="neutral">中性 (Neutral)</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 md:col-span-1">
+              <span className="text-sm font-medium text-slate-700">难度</span>
+              <select
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                value={difficulty}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard' | '')}
+              >
+                <option value="">未选择</option>
+                <option value="easy">入门 (Easy)</option>
+                <option value="medium">进阶 (Medium)</option>
+                <option value="hard">硬核 (Hard)</option>
+              </select>
             </label>
           </div>
 
@@ -525,6 +673,38 @@ export function AdminDashboardClient() {
           </label>
 
           {selectedId ? (
+            <div className="rounded-lg border border-slate-200 p-4 mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-semibold text-slate-900">蝴蝶效应图谱节点</div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">添加节点</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>添加节点</DialogTitle>
+                    </DialogHeader>
+                    <NodeForm onSave={onSaveNode} nodes={butterflyNodes} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="space-y-2">
+                {butterflyNodes.length === 0 ? <div className="text-xs text-slate-500">暂无节点</div> : null}
+                {butterflyNodes.map((node) => (
+                  <div key={node.id} className="flex items-center justify-between gap-2 text-sm border border-slate-100 bg-slate-50 p-2 rounded">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">{node.type}</Badge>
+                      <span>{node.label}</span>
+                      {node.parent_id ? <span className="text-xs text-slate-400">← {butterflyNodes.find(n => n.id === node.parent_id)?.label}</span> : null}
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => void onDeleteNode(node.id)} className="h-6 w-6 p-0 text-red-500">×</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {selectedId ? (
             <div className="pt-2 flex items-center justify-between">
               <Button variant="outline" onClick={resetEditor} disabled={saving}>
                 取消选择
@@ -541,6 +721,53 @@ export function AdminDashboardClient() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function NodeForm({ onSave, nodes }: { onSave: (l: string, t: string, p: string | null) => void; nodes: ButterflyNode[] }) {
+  const [label, setLabel] = useState('');
+  const [type, setType] = useState('event');
+  const [parentId, setParentId] = useState('');
+
+  return (
+    <div className="grid gap-4 py-4">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <span className="text-right text-sm font-medium">Label</span>
+        <input 
+          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400" 
+          value={label} 
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLabel(e.target.value)} 
+          placeholder="节点名称"
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <span className="text-right text-sm font-medium">Type</span>
+        <select 
+          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400 bg-white" 
+          value={type} 
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setType(e.target.value)}
+        >
+           <option value="root">Root (核心事件)</option>
+           <option value="event">Event (传导事件)</option>
+           <option value="impact">Impact (影响结果)</option>
+           <option value="ticker">Ticker (关联标的)</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <span className="text-right text-sm font-medium">Parent</span>
+        <select 
+          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400 bg-white" 
+          value={parentId} 
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setParentId(e.target.value)}
+        >
+           <option value="">(None - Root)</option>
+           {nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}
+        </select>
+      </div>
+      <div className="flex justify-end pt-2">
+        <Button onClick={() => { onSave(label, type, parentId || null); setLabel(''); }}>添加</Button>
       </div>
     </div>
   );

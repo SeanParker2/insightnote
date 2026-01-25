@@ -67,94 +67,90 @@ export const SidebarTool = memo(({ butterflyEffects, editorPicks }: SidebarToolP
   }
 
   return (
-    <aside className="col-span-12 lg:col-span-4 pl-0 lg:pl-8 border-l border-solid border-gray-200">
-      
-      {/* Butterfly Effect Map Widget */}
-      <div className="bg-brand-900 text-white p-6 mb-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
-            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
-          </svg>
-        </div>
-        <h3 className={`${playfair.className} text-lg font-bold mb-1`}>{uiTerms.butterflyMap}</h3>
-        <p className="text-xs text-slate-400 mb-4 font-sans">可视化市场因果链。</p>
-        
-        <div className="space-y-3 mb-6">
-          {butterflyEffects.map((effect, idx) => (
-            <div key={idx} className="flex items-center justify-between text-xs border-b border-brand-800 pb-2">
-              <span className="text-amber-500">{effect.cause}</span>
-              <span className="text-slate-500">→</span>
-              <span>{effect.effect}</span>
+    <aside className="col-span-12 lg:col-span-4 lg:pl-12 border-l border-border hidden lg:block">
+      <div className="sticky top-20 space-y-12">
+        {/* Butterfly Effect Map Widget */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-sans font-semibold text-sm text-foreground">{uiTerms.butterflyMap}</h3>
+            <TrackedLink
+              href="/tools/butterfly"
+              eventName="home_launch_terminal_click"
+              eventPayload={{ effect_count: butterflyEffects.length }}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              启动工具
+            </TrackedLink>
+          </div>
+          
+          <div className="border border-border rounded-sm p-4 bg-card">
+            <div className="space-y-3">
+              {butterflyEffects.map((effect, idx) => (
+                <div key={idx} className="flex items-center text-xs gap-2">
+                  <span className="text-muted-foreground font-medium truncate max-w-[40%]">{effect.cause}</span>
+                  <span className="text-border flex-shrink-0">→</span>
+                  <span className="text-foreground truncate">{effect.effect}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-        <TrackedLink
-          href="/tools/butterfly"
-          eventName="home_launch_terminal_click"
-          eventPayload={{ effect_count: butterflyEffects.length }}
-          className="w-full bg-white text-brand-900 py-2 text-xs font-bold uppercase tracking-wider hover:bg-slate-100 transition block text-center"
-        >
-          进入图谱
-        </TrackedLink>
-      </div>
 
-      {/* Editor's Picks */}
-      <div className="mb-10">
-        <h3 className="font-bold text-xs uppercase tracking-widest border-b border-black pb-2 mb-4">编辑精选</h3>
-        <ul className="space-y-4">
-          {editorPicks.map((pick, idx) => (
-            <li key={idx} className="flex flex-col gap-1">
-              <span className="text-[10px] text-amber-500 font-bold uppercase">{pick.category}</span>
-              {pick.url && pick.url !== '#' ? (
-                <TrackedLink
-                  href={pick.url}
-                  eventName="home_editor_pick_click"
-                  eventPayload={{ category: pick.category, url: pick.url }}
-                  className={`${playfair.className} font-bold text-slate-900 hover:text-brand-900 leading-tight`}
-                >
-                  {pick.title}
-                </TrackedLink>
-              ) : (
-                <span
-                  className={`${playfair.className} font-bold text-slate-400 leading-tight cursor-not-allowed`}
-                  aria-disabled="true"
-                >
-                  {pick.title}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+        {/* Editor's Picks */}
+        <div>
+          <h3 className="font-sans font-semibold text-sm text-foreground mb-4">编辑精选</h3>
+          <ul className="space-y-4">
+            {editorPicks.map((pick, idx) => (
+              <li key={idx} className="flex flex-col gap-1">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{pick.category}</span>
+                {pick.url && pick.url !== '#' ? (
+                  <TrackedLink
+                    href={pick.url}
+                    eventName="home_editor_pick_click"
+                    eventPayload={{ category: pick.category, url: pick.url }}
+                    className="font-medium text-sm text-foreground hover:text-primary transition-colors leading-snug"
+                  >
+                    {pick.title}
+                  </TrackedLink>
+                ) : (
+                  <span className="font-medium text-sm text-muted-foreground leading-snug cursor-not-allowed">
+                    {pick.title}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Daily Briefing CTA */}
-      <div className="bg-slate-50 border border-solid border-gray-200 p-6 text-center">
-        <h4 className={`${playfair.className} font-bold text-lg mb-2`}>{uiTerms.dailyBriefing}</h4>
-        <p className="text-xs text-slate-500 mb-4 px-2">加入 15,000+ 位投资者，获取开盘前要点解读。</p>
-        <input 
-          type="email" 
-          placeholder="邮箱地址" 
-          value={email}
-          onChange={(e) => {
-            setSubscribed(false);
-            setErrorMessage(null);
-            setEmail(e.target.value);
-          }}
-          className="w-full bg-white border border-slate-300 px-3 py-2 text-xs mb-2 focus:outline-none focus:border-brand-900"
-        />
-        <button
-          type="button"
-          onClick={onSubscribe}
-          disabled={!canSubmit}
-          className="w-full bg-brand-900 text-white py-2 text-xs font-bold uppercase hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:hover:bg-brand-900"
-        >
-          {submitting ? '订阅中…' : subscribed ? '已订阅' : '免费订阅'}
-        </button>
-        {errorMessage && <div className="text-xs text-red-600 mt-2">{errorMessage}</div>}
-        {subscribed && <div className="text-xs text-emerald-700 mt-2">订阅成功</div>}
+        {/* Daily Briefing CTA */}
+        <div>
+          <h4 className="font-sans font-semibold text-sm text-foreground mb-2">{uiTerms.dailyBriefing}</h4>
+          <p className="text-xs text-muted-foreground mb-3">加入 15,000+ 专业投资者，获取盘前情报。</p>
+          <div className="flex gap-2">
+            <input 
+              type="email" 
+              placeholder="您的邮箱地址" 
+              value={email}
+              onChange={(e) => {
+                setSubscribed(false);
+                setErrorMessage(null);
+                setEmail(e.target.value);
+              }}
+              className="flex-1 bg-background border border-border px-3 py-2 text-xs rounded-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+            />
+            <button
+              type="button"
+              onClick={onSubscribe}
+              disabled={!canSubmit}
+              className="bg-primary text-primary-foreground px-4 py-2 text-xs font-medium rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {submitting ? '...' : '订阅'}
+            </button>
+          </div>
+          {errorMessage && <div className="text-xs text-destructive mt-2">{errorMessage}</div>}
+          {subscribed && <div className="text-xs text-emerald-600 mt-2">订阅成功。</div>}
+        </div>
       </div>
-
     </aside>
   );
 });

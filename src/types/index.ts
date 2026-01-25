@@ -20,6 +20,9 @@ export interface Post {
   source_institution: string | null;
   source_date: string | Date | null;
   tags: string[];
+  sentiment: 'bullish' | 'bearish' | 'neutral' | null;
+  related_tickers: string[];
+  difficulty: 'easy' | 'medium' | 'hard' | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -46,6 +49,9 @@ export interface PostListItem {
   source_institution: string | null;
   source_date: string | Date | null;
   tags: string[];
+  sentiment: 'bullish' | 'bearish' | 'neutral' | null;
+  related_tickers: string[];
+  difficulty: 'easy' | 'medium' | 'hard' | null;
 }
 
 // 文章详情类型 (包含关联的蝴蝶节点)
@@ -65,6 +71,9 @@ export interface SecurePost {
   source_institution: string | null;
   source_date: string | Date | null;
   tags: string[];
+  sentiment: 'bullish' | 'bearish' | 'neutral' | null;
+  related_tickers: string[];
+  difficulty: 'easy' | 'medium' | 'hard' | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
