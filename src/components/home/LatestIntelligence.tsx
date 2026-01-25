@@ -3,11 +3,11 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PostListItem } from '@/types';
 import { Playfair_Display } from '@/lib/fonts';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowUpRight } from 'lucide-react';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { trackEvent } from '@/lib/analytics';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
-import { formatDateCN, formatTimeCN, uiTerms } from '@/lib/utils';
+import { formatDateCN, formatTimeCN, uiTerms, cn } from '@/lib/utils';
 
 const playfair = Playfair_Display({ subsets: ['latin'] });
 
@@ -97,68 +97,88 @@ export const LatestIntelligence = memo(({ posts }: LatestIntelligenceProps) => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between pb-4 border-b border-border">
-        <h3 className="text-lg font-semibold tracking-tight">{uiTerms.latestIntelligence}</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-3 uppercase">
+           <span className="w-1.5 h-6 bg-orange-500"></span>
+           {uiTerms.latestIntelligence}
+        </h3>
         {lastUpdatedLabel && (
-          <span className="text-xs text-muted-foreground">
-            更新于 {lastUpdatedLabel}
+          <span className="text-[10px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-800">
+            UPDATED: {lastUpdatedLabel}
           </span>
         )}
       </div>
 
-      <div className="grid gap-8">
-        {items.map((post) => (
-          <article key={post.id} className="group relative flex flex-col md:flex-row gap-6 items-start">
-            {/* Thumbnail */}
-            <div className="w-full md:w-48 aspect-video md:aspect-[4/3] relative rounded-lg overflow-hidden bg-muted flex-shrink-0">
-               {/* Use random-like tech images or a placeholder if real image not available */}
-               <img 
-                 src="/images/tech-thumb.jpg" 
-                 alt="" 
-                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-90 group-hover:opacity-100"
-               />
-               {post.is_premium && (
-                 <div className="absolute top-2 left-2 bg-black/60 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded border border-white/20 flex items-center gap-1">
-                   <Lock className="w-3 h-3" />
-                   <span>VIP</span>
-                 </div>
-               )}
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[minmax(180px,auto)]">
+        {items.map((post, index) => {
+          const isFeatured = index === 0;
+          const isWide = index === 1 || index === 2;
+          
+          return (
+            <article 
+                key={post.id} 
+                className={cn(
+                    "group relative flex flex-col overflow-hidden rounded-xl border border-slate-800 bg-card transition-all duration-300 hover:border-orange-500/50 hover:shadow-xl",
+                    isFeatured ? "md:col-span-2 md:row-span-2 min-h-[400px]" : "col-span-1",
+                    isWide && !isFeatured ? "md:col-span-2" : ""
+                )}
+            >
+                {/* Background Image / Gradient */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        src="/images/tech-thumb.jpg" 
+                        alt="" 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
 
-            <div className="flex-1 min-w-0 py-1">
-              <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
-                <span className="font-medium text-primary bg-primary/5 px-1.5 py-0.5 rounded">
-                   {post.source_institution || 'InsightNote'}
-                </span>
-                <span>•</span>
-                <time dateTime={post.published_at instanceof Date ? post.published_at.toISOString() : post.published_at}>{formatDateCN(post.published_at)}</time>
-              </div>
+                {/* Content */}
+                <div className="relative z-10 flex flex-col justify-end h-full p-6">
+                     {/* Tags & Meta */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100">
+                         {post.is_premium && (
+                            <span className="bg-brand-gold/20 text-brand-gold text-[10px] px-2 py-0.5 rounded-full border border-brand-gold/30 flex items-center gap-1 backdrop-blur-md">
+                                <Lock className="w-3 h-3" /> VIP
+                            </span>
+                        )}
+                        <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 backdrop-blur-md">
+                            {post.source_institution || 'InsightNote'}
+                        </span>
+                    </div>
 
-              <h4 className="text-xl font-bold leading-tight mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                <TrackedLink 
-                  href={`/posts/${post.slug}`}
-                  eventName="home_post_click"
-                  eventPayload={{ slug: post.slug }}
-                >
-                  {post.title}
-                </TrackedLink>
-              </h4>
+                    <h4 className={cn(
+                        "font-bold leading-tight mb-2 text-foreground group-hover:text-primary transition-colors",
+                        isFeatured ? "text-2xl md:text-3xl" : "text-lg"
+                    )}>
+                        <TrackedLink 
+                            href={`/posts/${post.slug}`}
+                            eventName="home_post_click"
+                            eventPayload={{ slug: post.slug }}
+                            className="before:absolute before:inset-0" 
+                        >
+                            {post.title}
+                        </TrackedLink>
+                    </h4>
 
-              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-3">
-                {post.summary_tldr || '暂无摘要'}
-              </p>
-
-              <div className="flex items-center gap-2">
-                {post.tags?.slice(0, 3).map(tag => (
-                  <span key={tag} className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border px-1.5 py-0.5 rounded hover:border-primary hover:text-primary transition-colors cursor-default">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </article>
-        ))}
+                    {(isFeatured || isWide) && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 text-balance">
+                            {post.summary_tldr || '暂无摘要'}
+                        </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-4 border-t border-white/10 group-hover:border-primary/30 transition-colors">
+                        <time dateTime={post.published_at instanceof Date ? post.published_at.toISOString() : post.published_at}>
+                            {formatDateCN(post.published_at)}
+                        </time>
+                         <ArrowUpRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-primary" />
+                    </div>
+                </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

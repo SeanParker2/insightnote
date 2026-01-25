@@ -48,7 +48,7 @@ export default async function Home() {
 
   const primary = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty')
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty, success_rate')
     .order('published_at', { ascending: false });
 
   if (!primary.error) {
@@ -65,6 +65,7 @@ export default async function Home() {
       sentiment: row.sentiment ?? null,
       related_tickers: normalizeTags(row.related_tickers),
       difficulty: row.difficulty ?? null,
+      success_rate: row.success_rate ?? null,
     }));
   } else {
     const isMissingSummary =
@@ -101,6 +102,7 @@ export default async function Home() {
           sentiment: row.sentiment ?? null,
           related_tickers: normalizeTags(row.related_tickers),
           difficulty: row.difficulty ?? null,
+          success_rate: row.success_rate ?? null,
         }));
       } else {
         loadError = fallback.error;
@@ -126,6 +128,20 @@ export default async function Home() {
       sentiment: 'bullish',
       related_tickers: ['NVDA', 'XLU'],
       difficulty: 'medium',
+      success_rate: 85,
+      predictions: [
+        {
+          id: 'mock-pred-1',
+          post_id: heroArticle.id,
+          symbol: 'NVDA',
+          direction: 'bullish',
+          start_price: 135.0,
+          target_price: 160.0,
+          timeframe_days: 30,
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+      ]
     };
 
     const mockFeed: PostListItem[] = latestFeed.map((item) => ({
@@ -141,6 +157,8 @@ export default async function Home() {
       sentiment: 'neutral',
       related_tickers: [],
       difficulty: 'medium',
+      success_rate: null,
+      predictions: [],
     }));
 
     items = [mockHero, ...mockFeed];

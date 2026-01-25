@@ -22,11 +22,11 @@ export async function Header() {
   const isAdmin = Boolean((profile as any)?.is_admin);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background border-b border-border">
+    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50 supports-[backdrop-filter]:bg-background/60">
       <div className="container-width flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-primary rounded-sm"></div>
-          <span className="font-sans text-lg font-bold tracking-tight text-foreground">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-5 h-5 bg-primary rounded-sm group-hover:bg-brand-gold transition-colors duration-300"></div>
+          <span className="font-sans text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors duration-300">
             InsightNote
           </span>
         </Link>

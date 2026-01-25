@@ -53,30 +53,35 @@ export const MarketTicker = memo(() => {
   }, []);
 
   return (
-    <div className="bg-background border-b border-border text-[10px] font-medium tracking-wide py-1 overflow-hidden relative z-40">
-      <div className="container-width flex items-center">
-        <div className="flex gap-8 items-center flex-1 overflow-hidden relative">
-          <div className="flex items-center gap-2 shrink-0 pr-4 border-r border-border z-10 bg-background">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-muted-foreground uppercase tracking-wider">市场概览</span>
-          </div>
-          
-          <div className="flex gap-8 overflow-x-auto no-scrollbar mask-linear-fade items-center animate-scroll opacity-80 hover:opacity-100 transition-opacity">
+    <div className="w-full bg-slate-950 border-b border-slate-800 text-xs font-mono tracking-wider py-2 overflow-hidden relative z-40 text-slate-300">
+      <div className="flex items-center w-full">
+        <div className="flex items-center gap-3 shrink-0 px-6 border-r border-slate-800 z-10 bg-slate-950 h-full">
+          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+          <span className="font-bold text-orange-500 uppercase tracking-widest">MARKET</span>
+        </div>
+        
+        <div className="flex-1 overflow-hidden relative flex items-center">
+          {/* Gradient Masks */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+
+          <div className="flex gap-12 overflow-x-auto no-scrollbar items-center animate-scroll hover:[animation-play-state:paused]">
             {items.length ? (
-              [...items, ...items].map((item, idx) => ( // Duplicate for infinite scroll feel
-                <span key={`${item.symbol}-${idx}`} className="flex items-center gap-2 whitespace-nowrap group cursor-default">
-                  <span className="font-semibold text-foreground">{item.symbol}</span>
-                  <span className="font-mono text-muted-foreground">{item.value}</span>
+              // Duplicate items multiple times to ensure smooth infinite scroll on large screens
+              [...items, ...items, ...items, ...items].map((item, idx) => (
+                <span key={`${item.symbol}-${idx}`} className="flex items-center gap-3 whitespace-nowrap cursor-pointer hover:bg-slate-900 px-2 py-1 rounded transition-colors">
+                  <span className="font-bold text-white">{item.symbol}</span>
+                  <span className="text-slate-400">{item.value}</span>
                   <span className={`
-                    flex items-center
-                    ${item.isUp ? 'text-emerald-600' : 'text-rose-600'}
+                    flex items-center gap-1
+                    ${item.isUp ? 'text-emerald-400' : 'text-rose-400'}
                   `}>
-                    {item.isUp ? '↑' : '↓'} {item.change}
+                    {item.isUp ? '▲' : '▼'} {item.change}
                   </span>
                 </span>
               ))
             ) : (
-              <span className="text-muted-foreground whitespace-nowrap">{loadError ? loadError : '连接中...'}</span>
+              <span className="text-slate-500 whitespace-nowrap pl-4">{loadError ? loadError : 'INITIALIZING MARKET DATA STREAM...'}</span>
             )}
           </div>
         </div>

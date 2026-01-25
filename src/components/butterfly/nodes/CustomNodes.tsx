@@ -26,8 +26,9 @@ export function ImpactNode({ data }: CustomNodeProps) {
 
 export function TickerNode({ data }: CustomNodeProps) {
   const isPositive = (data.changePercent || 0) >= 0;
-  const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
-  const borderClass = isPositive ? 'border-green-900/50' : 'border-red-900/50';
+  // 涨红跌绿 (Chinese Market Style)
+  const colorClass = isPositive ? 'text-red-500' : 'text-green-500';
+  const borderClass = isPositive ? 'border-red-900/50' : 'border-green-900/50';
   
   return (
     <div className={`relative w-[180px] h-[80px] bg-black border ${borderClass} rounded p-3`}>

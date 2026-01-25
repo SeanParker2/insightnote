@@ -83,7 +83,10 @@ export function buildFlowGraph(butterflyNodes: ButterflyNode[]) {
     for (let i = 0; i < arr.length; i++) {
       const n = arr[i]!;
       const flowType = toFlowType(n.type);
-      const ticker = flowType === 'ticker' ? extractTicker(n.label) ?? n.label : undefined;
+      const ticker =
+        flowType === 'ticker'
+          ? n.tickerSymbol ?? extractTicker(n.label) ?? n.label
+          : undefined;
 
       nodes.push({
         id: n.id,

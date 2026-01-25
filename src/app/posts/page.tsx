@@ -51,7 +51,7 @@ export default async function PostsPage() {
 
   const primary = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty')
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty, success_rate')
     .order('published_at', { ascending: false });
 
   if (!primary.error) {
@@ -68,6 +68,7 @@ export default async function PostsPage() {
       sentiment: row.sentiment ?? null,
       related_tickers: normalizeTags(row.related_tickers),
       difficulty: row.difficulty ?? null,
+      success_rate: row.success_rate ?? null,
     }));
   } else {
     const isMissingSummary =
@@ -104,6 +105,7 @@ export default async function PostsPage() {
           sentiment: row.sentiment ?? null,
           related_tickers: normalizeTags(row.related_tickers),
           difficulty: row.difficulty ?? null,
+          success_rate: row.success_rate ?? null,
         }));
       } else {
         loadError = fallback.error;

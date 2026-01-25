@@ -8,6 +8,28 @@ export interface Profile {
   updated_at: string | Date;
 }
 
+// 预测记录类型
+export interface Prediction {
+  id: string;
+  post_id: string;
+  symbol: string;
+  direction: 'bullish' | 'bearish' | 'neutral';
+  start_price: number | null;
+  target_price: number | null;
+  timeframe_days: number | null;
+  status: 'active' | 'won' | 'lost' | 'expired';
+  created_at: string | Date;
+}
+
+// 社区投票类型
+export interface PostVote {
+  id: string;
+  post_id: string;
+  user_id: string;
+  direction: 'up' | 'down';
+  created_at: string | Date;
+}
+
 // 文章内容类型
 export interface Post {
   id: string;
@@ -23,6 +45,7 @@ export interface Post {
   sentiment: 'bullish' | 'bearish' | 'neutral' | null;
   related_tickers: string[];
   difficulty: 'easy' | 'medium' | 'hard' | null;
+  success_rate: number | null; // 历史胜率
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -34,6 +57,13 @@ export interface ButterflyNode {
   label: string;
   type: 'root' | 'event' | 'impact' | 'ticker';
   parent_id: string | null;
+  tickerSymbol?: string; // 仅 ticker 类型有
+  marketData?: {
+    price: number;
+    changePercent: number; // 涨跌幅，如 2.5 或 -1.2
+    lastUpdated: string;
+    reason?: string; // AI generated insight
+  };
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -52,6 +82,8 @@ export interface PostListItem {
   sentiment: 'bullish' | 'bearish' | 'neutral' | null;
   related_tickers: string[];
   difficulty: 'easy' | 'medium' | 'hard' | null;
+  success_rate: number | null;
+  predictions?: Prediction[];
 }
 
 // 文章详情类型 (包含关联的蝴蝶节点)
@@ -74,6 +106,7 @@ export interface SecurePost {
   sentiment: 'bullish' | 'bearish' | 'neutral' | null;
   related_tickers: string[];
   difficulty: 'easy' | 'medium' | 'hard' | null;
+  predictions?: Prediction[];
   created_at: string | Date;
   updated_at: string | Date;
 }

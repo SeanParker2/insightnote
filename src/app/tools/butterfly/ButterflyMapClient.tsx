@@ -20,6 +20,10 @@ import { createClient } from '@/lib/supabase/client';
 import type { SecurePostDetail } from '@/types';
 import { trackEvent } from '@/lib/analytics';
 import { buildFlowGraph, type FlowNode } from '@/lib/butterfly/graph';
+import useSWR from 'swr';
+import MiniChart from '@/components/ui/MiniChart';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
@@ -44,6 +48,7 @@ export default function ButterflyMapClient() {
   const [hasUser, setHasUser] = useState(false);
   const [postLocked, setPostLocked] = useState(false);
   const [postIsPremium, setPostIsPremium] = useState(false);
+  const [activeSymbols, setActiveSymbols] = useState<string[]>([]);
 
   useEffect(() => {
     setSlugDraft(slug ?? '');
@@ -111,6 +116,12 @@ export default function ButterflyMapClient() {
       const graph = buildFlowGraph(post.butterfly_nodes ?? []);
       setNodes(graph.nodes);
       setEdges(graph.edges);
+
+      const symbols = graph.nodes
+        .filter((n) => n.type === 'ticker' && n.data.ticker)
+        .map((n) => n.data.ticker as string);
+      setActiveSymbols(Array.from(new Set(symbols)));
+
       setSelectedNodeId(null);
       setSessionTitle(post.title ?? '蝴蝶效应图谱');
       setLatencyMs(durationMs);
@@ -132,6 +143,48 @@ export default function ButterflyMapClient() {
       cancelled = true;
     };
   }, [slug, reloadKey, setEdges, setNodes]);
+
+  // Real-time Market Data Polling
+  const { data: marketData } = useSWR(
+    activeSymbols.length > 0 ? `/api/market/batch?symbols=${activeSymbols.join(',')}` : null,
+    fetcher,
+    { refreshInterval: 15000 }
+  );
+
+  useEffect(() => {
+    if (!marketData) return;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.type !== 'ticker' || !node.data.ticker) return node;
+
+        const ticker = node.data.ticker as string;
+        const data = marketData[ticker];
+        if (!data) return node;
+
+        // Only update if changed to avoid unnecessary re-renders
+        if (node.data.changePercent === data.changePercent) return node;
+
+        const change = data.changePercent;
+        const reason = data.reason;
+        // 涨红跌绿 (Chinese Market Style)
+        const isUp = change > 0;
+        const glow = isUp
+          ? 'shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+          : 'shadow-[0_0_15px_rgba(16,185,129,0.5)]';
+
+        return {
+          ...node,
+          className: glow,
+          data: {
+            ...node.data,
+            changePercent: change,
+            reason: reason
+          },
+        };
+      })
+    );
+  }, [marketData, setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -336,6 +389,48 @@ export default function ButterflyMapClient() {
             <Controls className="bg-[#1a1a1a] border border-[#333333] text-white" />
           </ReactFlow>
 
+          {/* MiniChart Integration */}
+          {selectedNode?.type === 'ticker' && selectedNode.data.ticker && (
+            <div className="absolute top-4 right-4 z-50 w-[380px] bg-[#0a0a0a] border border-[#333333] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-10">
+              <div className="flex justify-between items-center p-3 border-b border-[#333333] bg-[#111]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  <span className="text-sm font-bold text-white font-mono">
+                    {selectedNode.data.ticker}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedNodeId(null)}
+                  className="text-gray-500 hover:text-white transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div className="p-0">
+                <MiniChart
+                  symbol={selectedNode.data.ticker as string}
+                  width="100%"
+                  height={220}
+                  colorTheme="dark"
+                  autosize={false}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="absolute top-4 left-4 flex gap-2 z-10">
             <button
               className="bg-black border border-[#333333] text-gray-300 px-3 py-1.5 text-xs font-mono rounded hover:bg-gray-900 transition-colors"
@@ -466,6 +561,14 @@ export default function ButterflyMapClient() {
                         {(selectedNode.data.changePercent || 0) >= 0 ? '+' : ''}
                         {selectedNode.data.changePercent}%
                       </div>
+                    </div>
+                  </div>
+                )}
+                {selectedNode.type === 'ticker' && (selectedNode.data.reason as string) && (
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">AI 归因</label>
+                    <div className="text-xs text-brand-gold leading-relaxed font-mono bg-[#1a1a1a] p-2 rounded border border-[#333333] animate-pulse">
+                      {selectedNode.data.reason as string}
                     </div>
                   </div>
                 )}

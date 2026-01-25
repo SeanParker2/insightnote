@@ -63,6 +63,7 @@ While tech multiples have expanded to >30x forward earnings, the utility sector 
   sentiment: 'bullish',
   related_tickers: ['VST', 'CEG', 'ETN'],
   difficulty: 'medium',
+  success_rate: null,
   created_at: new Date(),
   updated_at: new Date(),
   butterfly_nodes: [

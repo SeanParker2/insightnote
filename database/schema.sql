@@ -141,6 +141,25 @@ CREATE INDEX idx_trusted_devices_last_seen_at ON trusted_devices(last_seen_at);
 CREATE INDEX idx_mfa_recovery_codes_user_id ON mfa_recovery_codes(user_id);
 CREATE INDEX idx_mfa_recovery_codes_used_at ON mfa_recovery_codes(used_at);
 
+-- Predictions Table
+CREATE TABLE predictions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID REFERENCES posts(id) NOT NULL,
+  symbol TEXT NOT NULL,
+  direction TEXT CHECK (direction IN ('bullish', 'bearish', 'neutral')),
+  start_price NUMERIC,
+  target_price NUMERIC,
+  timeframe_days INTEGER,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'won', 'lost', 'expired')),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_predictions_post_id ON predictions(post_id);
+CREATE INDEX idx_predictions_status ON predictions(status);
+CREATE INDEX idx_predictions_symbol ON predictions(symbol);
+
+ALTER TABLE posts ADD COLUMN success_rate NUMERIC DEFAULT NULL;
+
 CREATE OR REPLACE FUNCTION is_admin_user()
 RETURNS BOOLEAN
 LANGUAGE sql

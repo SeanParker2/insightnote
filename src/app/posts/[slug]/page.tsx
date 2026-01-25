@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownContent } from '@/components/post/MarkdownContent';
 import { createClient } from '@/lib/supabase/server';
-import { SecurePostDetail } from '@/types';
+import { SecurePostDetail, Prediction } from '@/types';
 import Link from 'next/link';
 import { PostTouchpoints } from '@/components/analytics/PostTouchpoints';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { ShareButton } from '@/components/post/ShareButton';
+import { VoteControl } from '@/components/community/VoteControl';
 import { formatDateCN, isSubscriptionActive, uiTerms } from '@/lib/utils';
 
 const playfair = Playfair_Display({ subsets: ['latin'] });
@@ -230,6 +231,18 @@ export default async function PostPage({ params }: { params: PostRouteParams }) 
     } as SecurePostDetail;
   }
 
+  if (post) {
+    const { data: predictions } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('post_id', post.id)
+      .order('created_at', { ascending: false });
+
+    if (predictions && predictions.length > 0) {
+      post.predictions = predictions as Prediction[];
+    }
+  }
+
   if (!post) {
     notFound();
   }
@@ -269,6 +282,9 @@ export default async function PostPage({ params }: { params: PostRouteParams }) 
               title={post.title}
               className="h-8 inline-flex items-center justify-center rounded-md px-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-brand-900 hover:bg-slate-100 transition-colors"
             />
+            <div className="h-4 w-px bg-slate-200 mx-2" />
+            <VoteControl postId={post.id} />
+            <div className="h-4 w-px bg-slate-200 mx-2" />
             <Button
               asChild
               variant="ghost"
