@@ -106,6 +106,7 @@ export interface SecurePost {
   sentiment: 'bullish' | 'bearish' | 'neutral' | null;
   related_tickers: string[];
   difficulty: 'easy' | 'medium' | 'hard' | null;
+  success_rate: number | null;
   predictions?: Prediction[];
   created_at: string | Date;
   updated_at: string | Date;

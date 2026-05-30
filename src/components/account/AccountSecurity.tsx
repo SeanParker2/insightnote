@@ -35,6 +35,13 @@ type EventSnapshot = {
   created_at: string;
 };
 
+function sanitizeSvg(svg: string): string {
+  return svg
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/javascript\s*:/gi, '');
+}
+
 function getOrCreateDeviceFingerprint() {
   if (typeof window === 'undefined') return null;
   try {
@@ -783,7 +790,7 @@ export function AccountSecurity() {
           <div className="space-y-4">
             {mfaEnrollQr ? (
               mfaEnrollQr.trim().startsWith('<svg') ? (
-                <div className="rounded-md border border-slate-200 bg-white p-3" dangerouslySetInnerHTML={{ __html: mfaEnrollQr }} />
+                <div className="rounded-md border border-slate-200 bg-white p-3" dangerouslySetInnerHTML={{ __html: sanitizeSvg(mfaEnrollQr) }} />
               ) : (
                 <img alt="二维码" className="w-56 h-56" src={mfaEnrollQr} />
               )

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getPublicSupabaseUrl } from '@/lib/env';
 import { isSubscriptionActive } from '@/lib/utils';
-import crypto from 'node:crypto';
+import { isValidEmail } from '@/lib/validation';
+import { hmacBase64Url } from '@/lib/crypto';
+import { timingSafeCompare } from '@/lib/crypto';
+import { escapeHtml } from '@/lib/html-escape';
 
 type ResendSendRequest = {
   from: string;
@@ -10,21 +13,6 @@ type ResendSendRequest = {
   subject: string;
   html: string;
 };
-
-function isValidEmail(email: string) {
-  if (email.length < 3 || email.length > 255) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function hmacBase64Url(secret: string, message: string) {
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(message);
-  return hmac
-    .digest('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
 
 function buildEmailHtml(
   origin: string,
@@ -34,8 +22,8 @@ function buildEmailHtml(
   const items = posts
     .map((post) => {
       const href = `${origin}/posts/${encodeURIComponent(post.slug)}`;
-      const title = String(post.title || '').trim();
-      const summary = String(post.summary_tldr || '').trim();
+      const title = escapeHtml(String(post.title || '').trim());
+      const summary = escapeHtml(String(post.summary_tldr || '').trim());
       return `<li style="margin: 0 0 16px 0;"><div style="font-weight: 700; margin-bottom: 6px;"><a href="${href}" style="color: #0f172a; text-decoration: none;">${title}</a></div><div style="color: #475569; font-size: 13px; line-height: 1.6;">${summary}</div></li>`;
     })
     .join('');
@@ -70,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   const providedSecret = request.headers.get('x-cron-secret') ?? '';
-  if (providedSecret !== cronSecret) {
+  if (!providedSecret || !timingSafeCompare(providedSecret, cronSecret)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
@@ -147,16 +135,24 @@ export async function POST(request: Request) {
 
   let sent = 0;
 
-  for (const email of recipients) {
-    const token = unsubscribeSecret ? hmacBase64Url(unsubscribeSecret, email) : null;
-    const unsubscribeUrl = token
-      ? `${origin}/api/daily-briefing/unsubscribe?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
-      : null;
+  const results = await Promise.allSettled(
+    recipients.map(async (email) => {
+      const token = unsubscribeSecret ? hmacBase64Url(unsubscribeSecret, email) : null;
+      const unsubscribeUrl = token
+        ? `${origin}/api/daily-briefing/unsubscribe?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
+        : null;
 
-    const html = buildEmailHtml(origin, items, { unsubscribeUrl });
-    await sendViaResend(resendApiKey, { from: fromEmail, to: [email], subject, html });
-    sent += 1;
+      const html = buildEmailHtml(origin, items, { unsubscribeUrl });
+      await sendViaResend(resendApiKey, { from: fromEmail, to: [email], subject, html });
+      return email;
+    }),
+  );
+
+  sent = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  if (failed > 0) {
+    console.error(`Failed to send ${failed} emails`);
   }
 
-  return NextResponse.json({ ok: true, sent }, { status: 200 });
+  return NextResponse.json({ ok: true, sent, failed }, { status: 200 });
 }

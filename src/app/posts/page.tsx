@@ -1,191 +1,133 @@
-import { playfair } from '@/lib/fonts';
 import { createClient } from '@/lib/supabase/server';
+import { normalizeTags } from '@/lib/markdown';
 import type { PostListItem } from '@/types';
-import { TrackedLink } from '@/components/analytics/TrackedLink';
-import { Lock } from 'lucide-react';
-import { formatDateCN } from '@/lib/utils';
-
-export const metadata = {
-  title: '全部文章｜InsightNote',
-};
+import Link from 'next/link';
+import { ArrowUpRight, ArrowDownRight, Clock, ChevronRight, Search } from 'lucide-react';
 
 export const revalidate = 60;
 
-function toPlainText(markdown: string) {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/<\/?[^>]+>/g, ' ')
-    .replace(/[>#*_~=-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function summarizeContent(markdown: unknown) {
-  if (typeof markdown !== 'string' || !markdown.trim()) return '';
-  const text = toPlainText(markdown);
-  if (!text) return '';
-  return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
-}
-
-function pickFirstString(...values: unknown[]) {
-  for (const value of values) {
-    if (typeof value === 'string' && value.trim()) return value;
-  }
-  return '';
-}
-
-function normalizeTags(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((tag): tag is string => typeof tag === 'string');
-}
-
 export default async function PostsPage() {
   const supabase = await createClient();
-  let items: PostListItem[] = [];
-  let loadError: any = null;
 
-  const primary = await supabase
+  const { data: posts } = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty, success_rate')
-    .order('published_at', { ascending: false });
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, tags, sentiment, related_tickers')
+    .order('published_at', { ascending: false })
+    .limit(50);
 
-  if (!primary.error) {
-    items = (primary.data ?? []).map((row: any) => ({
-      id: String(row.id),
-      slug: String(row.slug),
-      title: String(row.title),
-      summary_tldr: typeof row.summary_tldr === 'string' ? row.summary_tldr : '',
-      is_premium: Boolean(row.is_premium),
-      published_at: row.published_at,
-      source_institution: row.source_institution ?? null,
-      source_date: row.source_date ?? null,
-      tags: normalizeTags(row.tags),
-      sentiment: row.sentiment ?? null,
-      related_tickers: normalizeTags(row.related_tickers),
-      difficulty: row.difficulty ?? null,
-      success_rate: row.success_rate ?? null,
-    }));
-  } else {
-    const isMissingSummary =
-      primary.error.code === '42703' ||
-      (typeof primary.error.message === 'string' && primary.error.message.includes('summary_tldr'));
-
-    if (isMissingSummary) {
-      const fallback = await supabase
-        .from('posts')
-        .select('*')
-        .order('published_at', { ascending: false });
-
-      if (!fallback.error) {
-        items = (fallback.data ?? []).map((row: any) => ({
-          id: String(row.id),
-          slug: String(row.slug),
-          title: String(row.title),
-          summary_tldr: pickFirstString(
-            row.summary_tldr,
-            row.summary,
-            row.tldr,
-            row.abstract,
-            row.description,
-            row.excerpt,
-            summarizeContent(
-              pickFirstString(row.content_mdx, row.content, row.content_markdown, row.content_md, row.body),
-            ),
-          ),
-          is_premium: Boolean(row.is_premium ?? row.premium ?? row.is_paid),
-          published_at: row.published_at ?? row.created_at ?? new Date().toISOString(),
-          source_institution: row.source_institution ?? row.institution ?? null,
-          source_date: row.source_date ?? null,
-          tags: normalizeTags(row.tags ?? row.topics ?? row.labels),
-          sentiment: row.sentiment ?? null,
-          related_tickers: normalizeTags(row.related_tickers),
-          difficulty: row.difficulty ?? null,
-          success_rate: row.success_rate ?? null,
-        }));
-      } else {
-        loadError = fallback.error;
-      }
-    } else {
-      loadError = primary.error;
-    }
-  }
+  const items: PostListItem[] = (posts ?? []).map((row) => ({
+    id: String(row.id),
+    slug: String(row.slug),
+    title: String(row.title),
+    summary_tldr: typeof row.summary_tldr === 'string' ? row.summary_tldr : '',
+    is_premium: Boolean(row.is_premium),
+    published_at: row.published_at,
+    source_institution: row.source_institution ?? null,
+    source_date: null,
+    tags: normalizeTags(row.tags),
+    sentiment: (row.sentiment as PostListItem['sentiment']) ?? null,
+    related_tickers: normalizeTags(row.related_tickers),
+    difficulty: null,
+    success_rate: null,
+  }));
 
   return (
-    <div className="min-h-screen bg-white py-12">
-      <div className="max-w-5xl mx-auto px-6">
-        <header className="flex items-end justify-between gap-6 border-b border-slate-200 pb-6">
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="h-14 flex items-center justify-between px-8 border-b border-neutral-100 bg-white">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="text-neutral-400 hover:text-neutral-600 text-xs">首页</Link>
+          <ChevronRight className="w-3 h-3 text-neutral-200" />
+          <h1 className="text-sm font-semibold text-neutral-900">深度研究</h1>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100">
+          <Search className="w-3.5 h-3.5 text-neutral-400" />
+          <span className="text-xs text-neutral-400">搜索文章...</span>
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-8 py-8">
+        {/* Stats */}
+        <div className="flex items-center gap-6 mb-8">
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">文章库</div>
-            <h1 className={`${playfair.className} mt-2 text-4xl font-bold text-slate-900`}>全部文章</h1>
-            <p className="mt-3 text-sm text-slate-600">按最新发布时间排序，持续更新。</p>
+            <span className="text-2xl font-bold text-neutral-900">{items.length}</span>
+            <span className="text-sm text-neutral-400 ml-1.5">篇研究</span>
           </div>
-          <TrackedLink
-            href="/"
-            className="text-sm font-bold text-brand-900 hover:text-brand-gold transition-colors"
-            eventName="posts_back_home_click"
-          >
-            ← 返回首页
-          </TrackedLink>
-        </header>
-
-        {loadError && (
-          <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            暂时无法加载文章列表，请稍后重试。
-            {loadError.message && (
-              <div className="mt-2 text-xs text-red-700 break-all">{loadError.message}</div>
-            )}
+          <div className="h-6 w-px bg-neutral-100" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-400" />
+            <span className="text-xs text-neutral-500">{items.filter(i => i.sentiment === 'bullish').length} 看多</span>
           </div>
-        )}
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-xs text-neutral-500">{items.filter(i => i.sentiment === 'bearish').length} 看空</span>
+          </div>
+        </div>
 
-        {!loadError && items.length === 0 && (
-          <div className="mt-12 text-center text-sm text-slate-500">暂无文章</div>
-        )}
-
-        <div className="mt-10 divide-y divide-slate-200">
+        {/* List */}
+        <div className="space-y-1">
           {items.map((post) => (
-            <TrackedLink
+            <Link
               key={post.id}
               href={`/posts/${post.slug}`}
-              eventName="posts_item_click"
-              eventPayload={{
-                slug: post.slug,
-                is_premium: post.is_premium,
-                source_institution: post.source_institution,
-                tag: post.tags?.[0] ?? null,
-              }}
-              className="block py-8 hover:bg-slate-50/60 transition-colors"
+              className="group flex items-start gap-5 p-5 rounded-xl hover:bg-white hover:border-neutral-200 hover:shadow-sm border border-transparent transition-all duration-200"
             >
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    <span>{formatDateCN(post.published_at)}</span>
-                    <span className="text-slate-300">•</span>
-                    <span>{post.source_institution ?? 'InsightNote'}</span>
-                    {post.tags?.[0] && (
-                      <>
-                        <span className="text-slate-300">•</span>
-                        <span>{post.tags[0]}</span>
-                      </>
-                    )}
-                    {post.is_premium && (
-                  <span className="ml-1 inline-flex items-center gap-1 rounded border border-brand-gold/40 bg-brand-gold/10 px-2 py-0.5 text-[9px] text-brand-900">
-                    <Lock className="w-3 h-3" /> 专业版
-                  </span>
-                )}
+              {/* Sentiment Indicator */}
+              <div className="shrink-0 mt-0.5">
+                {post.sentiment === 'bullish' ? (
+                  <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                    <ArrowUpRight className="w-4 h-4 text-red-500" />
                   </div>
+                ) : post.sentiment === 'bearish' ? (
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                    <ArrowDownRight className="w-4 h-4 text-emerald-500" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
+                    <div className="w-3 h-0.5 bg-neutral-400 rounded" />
+                  </div>
+                )}
+              </div>
 
-                  <h2 className={`${playfair.className} mt-3 text-2xl font-bold text-slate-900`}>
-                    {post.title}
-                  </h2>
-                  <p className="mt-3 text-sm text-slate-600 leading-relaxed line-clamp-2">
-                    {post.summary_tldr || '暂无摘要'}
-                  </p>
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  {post.tags.slice(0, 3).map((tag) => (
+                    <span key={tag} className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">{tag}</span>
+                  ))}
+                  {post.is_premium && (
+                    <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Pro</span>
+                  )}
+                </div>
+                <h3 className="text-[15px] font-semibold text-neutral-900 mb-1.5 group-hover:text-blue-600 transition-colors leading-snug">
+                  {post.title}
+                </h3>
+                <p className="text-[13px] text-neutral-500 line-clamp-1 mb-2">
+                  {post.summary_tldr}
+                </p>
+                <div className="flex items-center gap-3 text-[11px] text-neutral-400">
+                  <span>{post.source_institution ?? 'InsightNote'}</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {new Date(post.published_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
+                  </span>
+                  {post.related_tickers.length > 0 && (
+                    <>
+                      <span>·</span>
+                      <div className="flex gap-1">
+                        {post.related_tickers.slice(0, 3).map((t) => (
+                          <span key={t} className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-mono">{t}</span>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            </TrackedLink>
+
+              {/* Arrow */}
+              <ChevronRight className="w-4 h-4 text-neutral-200 group-hover:text-neutral-400 shrink-0 mt-2 transition-colors" />
+            </Link>
           ))}
         </div>
       </div>

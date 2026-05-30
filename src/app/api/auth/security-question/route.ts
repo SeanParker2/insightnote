@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getPublicSupabaseUrl } from '@/lib/env';
-
-function isValidEmail(email: string) {
-  if (email.length < 3 || email.length > 255) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+import { isValidEmail } from '@/lib/validation';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  const rl = checkRateLimit(`security-question:${ip}`, { windowMs: 60_000, max: 5 });
+  if (!rl.ok) {
+    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => ({} as any))) as { email?: unknown };
   const rawEmail = typeof body.email === 'string' ? body.email : '';
   const email = rawEmail.trim().toLowerCase();

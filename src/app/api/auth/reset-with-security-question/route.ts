@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getPublicSupabaseUrl } from '@/lib/env';
+import { isValidEmail } from '@/lib/validation';
+import { checkRateLimit } from '@/lib/rate-limit';
 import crypto from 'node:crypto';
-
-function isValidEmail(email: string) {
-  if (email.length < 3 || email.length > 255) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
 function parsePhc(value: string) {
   const parts = value.split('$');
@@ -26,6 +23,12 @@ function safeEqual(a: Buffer, b: Buffer) {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  const rl = checkRateLimit(`reset-password:${ip}`, { windowMs: 300_000, max: 3 });
+  if (!rl.ok) {
+    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => ({} as any))) as {
     email?: unknown;
     answer?: unknown;

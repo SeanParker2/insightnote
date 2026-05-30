@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
-import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { timingSafeCompare } from '@/lib/crypto';
+import { deepseek, DEEPSEEK_MODEL, isDeepSeekConfigured } from '@/lib/ai-client';
+import { buildGenerateInsightPrompt } from '@/lib/prompts';
 
 const parser = new Parser();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // 东方财富 宏观经济 RSS
 const RSS_URL = 'http://www.eastmoney.com/rss/hongguan.xml';
 
 export async function GET(request: Request) {
-  // 1. 安全校验
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET?.trim() ?? '';
+  if (!cronSecret) {
+    return new Response('Server misconfigured', { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token || !timingSafeCompare(token, cronSecret)) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -44,25 +49,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, message: 'Already processed', title: latestItem.title });
     }
 
-    // 4. AI 分析与重写
-    const prompt = `
-      你是一名专业的 A 股分析师。请阅读以下新闻，并生成一个 100 字以内的“大白话”点评。
-      新闻标题：${latestItem.title}
-      新闻内容：${latestItem.contentSnippet || latestItem.content || ''}
-      
-      输出格式要求 JSON：
-      {
-        "title": "更吸引人的短标题 (30字以内)",
-        "summary": "深度点评 (100字以内)",
-        "sentiment": "bullish" | "bearish" | "neutral",
-        "related_sectors": ["板块1", "板块2"],
-        "related_tickers": ["股票代码1", "股票代码2"] (如果文中提到了具体股票，否则为空数组)
-      }
-    `;
+    const { system, user } = buildGenerateInsightPrompt(
+      latestItem.title ?? '',
+      latestItem.contentSnippet || latestItem.content || '',
+    );
 
-    const completion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "gpt-4-turbo",
+    const completion = await deepseek.chat.completions.create({
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      model: DEEPSEEK_MODEL,
       response_format: { type: "json_object" },
     });
 

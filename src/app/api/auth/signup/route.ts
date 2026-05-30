@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getPublicSupabaseUrl } from '@/lib/env';
+import { isValidEmail } from '@/lib/validation';
 import crypto from 'node:crypto';
-
-function isValidEmail(email: string) {
-  if (email.length < 3 || email.length > 255) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
 function toBase64(bytes: Uint8Array) {
   return Buffer.from(bytes).toString('base64');

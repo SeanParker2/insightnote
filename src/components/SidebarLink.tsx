@@ -2,30 +2,33 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ReactNode } from 'react';
 
 interface SidebarLinkProps {
   href: string;
   icon: React.ReactNode;
   label: string;
+  badge?: ReactNode;
 }
 
-export function SidebarLink({ href, icon, label }: SidebarLinkProps) {
+export function SidebarLink({ href, icon, label, badge }: SidebarLinkProps) {
   const pathname = usePathname();
   const isActive = pathname === href;
 
   return (
-    <Link href={href} className={`
-        flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group
+    <Link 
+      href={href} 
+      className={`
+        flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] transition-all duration-150
         ${isActive 
-            ? 'bg-brand-primary/10 text-brand-accent border border-brand-primary/20' 
-            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'
+          ? 'bg-neutral-900 text-white font-medium' 
+          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
         }
-    `}>
-        <span className={isActive ? 'text-brand-accent' : 'text-slate-500 group-hover:text-slate-300'}>
-            {icon}
-        </span>
-        <span className="text-sm font-medium">{label}</span>
-        {isActive && <div className="ml-auto w-1 h-1 bg-brand-accent rounded-full shadow-[0_0_8px_var(--accent-gold)]" />}
+      `}
+    >
+      <span className={isActive ? 'text-white' : 'text-neutral-400'}>{icon}</span>
+      <span className="flex-1">{label}</span>
+      {badge}
     </Link>
   );
 }

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { timingSafeCompare } from '@/lib/crypto';
 
-// Alpha Vantage API Key
-const API_KEY = '5IHQECBOJPX0LKW1';
+const API_KEY = process.env.ALPHA_VANTAGE_API_KEY?.trim() ?? '';
 
 // 关注列表映射 (Internal Symbol -> Alpha Vantage Symbol)
 const SYMBOL_MAPPING: Record<string, string> = {
@@ -80,10 +80,18 @@ async function fetchQuote(symbol: string) {
 }
 
 export async function GET(request: Request) {
-  // 1. 安全校验
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET?.trim() ?? '';
+  if (!cronSecret) {
+    return new Response('Server misconfigured', { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token || !timingSafeCompare(token, cronSecret)) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  if (!API_KEY) {
+    return NextResponse.json({ success: false, error: 'ALPHA_VANTAGE_API_KEY not configured' }, { status: 500 });
   }
 
   // 2. 检查交易时间 (A股时段)

@@ -1,14 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { verifyPrediction } from '@/lib/ai-helper';
+import { timingSafeCompare } from '@/lib/crypto';
 import type { Prediction } from '@/types';
 
 // Mock function to get market data
 // In a real scenario, this would call Yahoo Finance, AlphaVantage, or a paid data provider
 async function getMarketContext(symbol: string): Promise<string> {
-  // Simulate API latency
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
   // Mock data for demo purposes - In a real app, fetch from Yahoo Finance/News API
   const mockPrices: Record<string, number> = {
     'AAPL': 230.50,
@@ -21,18 +19,21 @@ async function getMarketContext(symbol: string): Promise<string> {
 
   const price = mockPrices[symbol] || (100 + Math.random() * 50);
   
-  // Construct a "Context String" that the AI can read
   return `Market Report: ${new Date().toISOString()}. 
   The current trading price for ${symbol} is $${price.toFixed(2)}. 
   Market sentiment is generally volatile. Tech sector is showing strength.`;
 }
 
 export async function GET(request: Request) {
-  // Verify Cron secret if needed (omitted for now as per instructions to just build logic)
-  // const authHeader = request.headers.get('authorization');
-  // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return new NextResponse('Unauthorized', { status: 401 });
-  // }
+  const cronSecret = process.env.CRON_SECRET?.trim() ?? '';
+  if (!cronSecret) {
+    return new Response('Server misconfigured', { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token || !timingSafeCompare(token, cronSecret)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
   const supabase = await createClient();
 
@@ -107,26 +108,30 @@ export async function GET(request: Request) {
     }
   }
 
-  // 3. Recalculate Success Rate for affected Posts
-  for (const postId of updatedPostIds) {
-    // Get all predictions for this post
-    const { data: postPredictions } = await supabase
+  // 3. Recalculate Success Rate for affected Posts (batched)
+  if (updatedPostIds.size > 0) {
+    const postIds = Array.from(updatedPostIds);
+    const { data: allPredictions } = await supabase
       .from('predictions')
-      .select('status')
-      .eq('post_id', postId);
+      .select('post_id, status')
+      .in('post_id', postIds);
 
-    if (postPredictions && postPredictions.length > 0) {
-      const predictionsList = postPredictions as unknown as { status: string }[];
-      const completed = predictionsList.filter(p => p.status === 'won' || p.status === 'lost');
-      if (completed.length > 0) {
-        const won = completed.filter(p => p.status === 'won').length;
-        const rate = (won / completed.length) * 100;
-        
-        await supabase
-          .from('posts')
-          .update({ success_rate: rate })
-          .eq('id', postId);
+    if (allPredictions) {
+      const rateMap = new Map<string, number>();
+      for (const pid of postIds) {
+        const postPreds = allPredictions.filter((p) => p.post_id === pid);
+        const completed = postPreds.filter((p) => p.status === 'won' || p.status === 'lost');
+        if (completed.length > 0) {
+          const won = completed.filter((p) => p.status === 'won').length;
+          rateMap.set(pid, (won / completed.length) * 100);
+        }
       }
+
+      await Promise.all(
+        Array.from(rateMap.entries()).map(([pid, rate]) =>
+          supabase.from('posts').update({ success_rate: rate }).eq('id', pid),
+        ),
+      );
     }
   }
 

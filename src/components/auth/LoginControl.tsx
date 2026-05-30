@@ -266,7 +266,7 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
         variant="outline"
         className="w-full text-xs h-8 border-white/10 bg-white/5 hover:bg-white/10 text-slate-300"
       >
-        <Link href="/login">Sign In</Link>
+        <Link href="/login">登录</Link>
       </Button>
     );
   }

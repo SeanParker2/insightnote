@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type EventsRequestBody = {
   event_name?: string;
@@ -13,6 +14,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  const rl = checkRateLimit(`events:${ip}`, { windowMs: 60_000, max: 30 });
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => ({} as EventsRequestBody))) as EventsRequestBody;
   const eventName = typeof body.event_name === 'string' ? body.event_name.trim() : '';
 
@@ -46,7 +53,7 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json({ ok: true }, { status: 202 });
+    return NextResponse.json({ ok: false, error: 'db_error' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

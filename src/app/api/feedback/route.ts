@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type FeedbackCategory = 'general' | 'bug' | 'feature' | 'billing';
 
@@ -16,6 +17,12 @@ function isFeedbackCategory(value: unknown): value is FeedbackCategory {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  const rl = checkRateLimit(`feedback:${ip}`, { windowMs: 60_000, max: 5 });
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => ({} as FeedbackRequestBody))) as FeedbackRequestBody;
 
   const category: FeedbackCategory = isFeedbackCategory(body.category) ? body.category : 'general';

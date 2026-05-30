@@ -1,302 +1,167 @@
-import { MarketTicker } from '@/components/home/MarketTicker';
-import { InsightCard } from '@/components/home/TerminalUI';
-import { ButterflyChart } from '@/components/home/ButterflyChart';
-import { butterflyEffects } from '@/lib/mock/tools.mock';
 import { createClient } from '@/lib/supabase/server';
-import { PostListItem } from '@/types';
-import { playfair, mono } from '@/lib/fonts';
-import { Activity, ArrowUpRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { normalizeTags } from '@/lib/markdown';
+import type { PostListItem } from '@/types';
 import Link from 'next/link';
+import { ArrowUpRight, ArrowDownRight, Clock, ChevronRight, FileText, Activity, Target, Edit3, Compass, Layers, Swords, BookOpen, Briefcase, BarChart3, Bell, Settings, Zap } from 'lucide-react';
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
-function toPlainText(markdown: string) {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/<\/?[^>]+>/g, ' ')
-    .replace(/[>#*_~=-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const NAV_ITEMS = [
+  { href: '/posts', label: '深度研究', desc: 'AI 生成的金融分析报告', icon: FileText, color: 'bg-blue-50 text-blue-600' },
+  { href: '/briefing', label: '每日晨报', desc: '基于持仓的个性化简报', icon: Activity, color: 'bg-amber-50 text-amber-600' },
+  { href: '/tools/butterfly', label: '蝴蝶效应', desc: '事件因果传导图谱', icon: Target, color: 'bg-purple-50 text-purple-600' },
+  { href: '/tools/graph-editor', label: '图谱编辑', desc: '自定义因果链路', icon: Edit3, color: 'bg-indigo-50 text-indigo-600' },
+  { href: '/scenario', label: '情景模拟', desc: '宏观假设对持仓影响', icon: Compass, color: 'bg-cyan-50 text-cyan-600' },
+  { href: '/battle-map', label: '作战地图', desc: '24h 事件热力图', icon: Layers, color: 'bg-rose-50 text-rose-600' },
+  { href: '/controversies', label: '争议地图', desc: '市场多空辩论', icon: Swords, color: 'bg-orange-50 text-orange-600' },
+  { href: '/journal', label: '决策日志', desc: '记录与复盘投资决策', icon: BookOpen, color: 'bg-emerald-50 text-emerald-600' },
+  { href: '/portfolio', label: '持仓管理', desc: '管理投资组合', icon: Briefcase, color: 'bg-teal-50 text-teal-600' },
+  { href: '/reviews', label: '周度复盘', desc: '行为分析与偏差识别', icon: BarChart3, color: 'bg-violet-50 text-violet-600' },
+  { href: '/notifications', label: '预警通知', desc: '智能风险预警', icon: Bell, color: 'bg-red-50 text-red-600' },
+  { href: '/pricing', label: '订阅 Pro', desc: '解锁全部深度研究', icon: Zap, color: 'bg-amber-50 text-amber-600' },
+];
 
-function summarizeContent(markdown: unknown) {
-  if (typeof markdown !== 'string' || !markdown.trim()) return '';
-  const text = toPlainText(markdown);
-  if (!text) return '';
-  return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
-}
-
-function pickFirstString(...values: unknown[]) {
-  for (const value of values) {
-    if (typeof value === 'string' && value.trim()) return value;
-  }
-  return '';
-}
-
-function normalizeTags(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((tag): tag is string => typeof tag === 'string');
-}
-
-export default async function AlphaTerminalPage() {
+export default async function HomePage() {
   const supabase = await createClient();
-  
-  let items: PostListItem[] = [];
-  let loadError: any = null;
 
-  const primary = await supabase
+  const { data: posts } = await supabase
     .from('posts')
-    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, source_date, tags, sentiment, related_tickers, difficulty, success_rate')
-    .order('published_at', { ascending: false });
+    .select('id, slug, title, summary_tldr, is_premium, published_at, source_institution, tags, sentiment, related_tickers')
+    .order('published_at', { ascending: false })
+    .limit(10);
 
-  if (!primary.error) {
-    items = (primary.data ?? []).map((row: any) => ({
-      id: String(row.id),
-      slug: String(row.slug),
-      title: String(row.title),
-      summary_tldr: typeof row.summary_tldr === 'string' ? row.summary_tldr : '',
-      is_premium: Boolean(row.is_premium),
-      published_at: row.published_at,
-      source_institution: row.source_institution ?? null,
-      source_date: row.source_date ?? null,
-      tags: normalizeTags(row.tags),
-      sentiment: row.sentiment ?? null,
-      related_tickers: normalizeTags(row.related_tickers),
-      difficulty: row.difficulty ?? null,
-      success_rate: row.success_rate ?? null,
-    }));
-  } else {
-    // Fallback logic for missing columns or errors
-    const isMissingSummary =
-      primary.error.code === '42703' ||
-      (typeof primary.error.message === 'string' && primary.error.message.includes('summary_tldr'));
+  const items: PostListItem[] = (posts ?? []).map((row) => ({
+    id: String(row.id), slug: String(row.slug), title: String(row.title),
+    summary_tldr: typeof row.summary_tldr === 'string' ? row.summary_tldr : '',
+    is_premium: Boolean(row.is_premium), published_at: row.published_at,
+    source_institution: row.source_institution ?? null, source_date: null,
+    tags: normalizeTags(row.tags), sentiment: (row.sentiment as PostListItem['sentiment']) ?? null,
+    related_tickers: normalizeTags(row.related_tickers), difficulty: null, success_rate: null,
+  }));
 
-    if (isMissingSummary) {
-      const fallback = await supabase
-        .from('posts')
-        .select('*')
-        .order('published_at', { ascending: false });
-
-      if (!fallback.error) {
-        items = (fallback.data ?? []).map((row: any) => ({
-          id: String(row.id),
-          slug: String(row.slug),
-          title: String(row.title),
-          summary_tldr: pickFirstString(
-            row.summary_tldr,
-            row.summary,
-            row.tldr,
-            row.abstract,
-            row.description,
-            row.excerpt,
-            summarizeContent(
-              pickFirstString(row.content_mdx, row.content, row.content_markdown, row.content_md, row.body),
-            ),
-          ),
-          is_premium: Boolean(row.is_premium ?? row.premium ?? row.is_paid),
-          published_at: row.published_at ?? row.created_at ?? new Date().toISOString(),
-          source_institution: row.source_institution ?? row.institution ?? null,
-          source_date: row.source_date ?? null,
-          tags: normalizeTags(row.tags),
-          sentiment: row.sentiment ?? null,
-          related_tickers: normalizeTags(row.related_tickers),
-          difficulty: row.difficulty ?? null,
-          success_rate: row.success_rate ?? null,
-        }));
-      } else {
-        loadError = fallback.error.message;
-      }
-    } else {
-      loadError = primary.error.message;
-    }
-  }
-
-  // 1. Separate Featured (Hero) and Others
-  const heroPost = items.length > 0 ? items[0] : null;
-  const gridPosts = items.length > 0 ? items.slice(1, 7) : [];
-  
-  // Use mock or real butterfly effects
-  const chainEffects = butterflyEffects || [];
+  const hero = items[0];
+  const rest = items.slice(1);
 
   return (
-    <main className="min-h-screen flex flex-col bg-(--bg-obsidian) text-slate-300 font-sans selection:bg-(--signal-bull) selection:text-black">
-      {/* 1. 顶栏：状态栏 & Ticker */}
-      <header className="sticky top-0 z-40 border-b border-(--border-glass) bg-[#0B1120]/90 backdrop-blur-xl transition-all duration-300">
-        <div className="flex items-center justify-between h-14 px-6">
-          
-          {/* Ticker */}
-          <div className="flex-1 mr-8 overflow-hidden mask-linear-fade relative h-full flex items-center">
-             <MarketTicker className="w-full h-full flex items-center text-xs font-mono" transparent />
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* Header */}
+      <header className="h-14 flex items-center justify-between px-6 md:px-8 border-b border-neutral-100 bg-white sticky top-0 z-30">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-neutral-900 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">IN</span>
           </div>
-          
-          <div className="flex items-center gap-4 text-xs font-medium text-slate-400 font-mono">
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span> 纽约: 休市</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-(--signal-bull) animate-pulse"></span> 伦敦: 开盘</span>
-          </div>
+          <span className="text-sm font-semibold text-neutral-900">InsightNote</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="text-xs text-neutral-500 hover:text-neutral-900">登录</Link>
+          <Link href="/signup" className="px-3 py-1.5 bg-neutral-900 text-white text-xs font-medium rounded-lg hover:bg-neutral-800">注册</Link>
         </div>
       </header>
 
-      {/* 2. 核心工作区 (2-Column Layout: Content + Right Sidebar) */}
-      <div className="flex-1 flex overflow-hidden h-[calc(100vh-3.5rem)]">
-        
-        {/* 中间栏：主要情报流 (The Intelligence Stream) */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-          
-          {loadError && (
-             <div className="mb-4 border border-(--signal-bear)/20 bg-(--signal-bear)/5 px-6 py-4 rounded-xl text-sm text-(--signal-bear) flex items-center gap-4">
-               <span className="w-2 h-2 rounded-full bg-(--signal-bear) animate-pulse"></span>
-               <span>
-                 连接中断，使用缓存数据。
-               </span>
-             </div>
-          )}
-
-          {/* Hero Section: The "Magnum Opus" - Daily Insight */}
-          <section className="relative mb-12">
-            {/* Background Ambient Mesh */}
-            <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand-accent/5 rounded-full blur-[80px] pointer-events-none mix-blend-screen" />
-
-            {heroPost ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* 1. Main Editorial (Cols 1-8) */}
-                <div className="lg:col-span-8 relative group">
-                  {/* Decorative Top Line */}
-                  <div className="w-12 h-0.5 bg-brand-accent mb-6" />
-                  
-                  <div className="flex items-center gap-3 mb-4 text-xs font-mono text-slate-500 uppercase tracking-widest">
-                    <span className="text-brand-accent">●</span>
-                    <span>Daily Briefing</span>
-                    <span className="text-slate-700">|</span>
-                    <span>{new Date(heroPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
-                  </div>
-
-                  <Link href={`/post/${heroPost.slug}`} className="block">
-                    <h1 className={`${playfair.className} text-5xl lg:text-7xl font-bold text-slate-100 mb-6 leading-[0.95] tracking-tight group-hover:text-white transition-colors`}>
-                      {heroPost.title}
-                    </h1>
-                  </Link>
-
-                  <p className="text-xl text-slate-400 leading-relaxed font-light max-w-3xl border-l-2 border-white/10 pl-6 mb-8 text-pretty">
-                    {heroPost.summary_tldr}
-                  </p>
-
-                  <div className="flex items-center gap-4">
-                     <Link href={`/post/${heroPost.slug}`} className="flex items-center gap-2 text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-2.5 rounded-sm transition-all group/btn">
-                        READ BRIEFING
-                        <ArrowUpRight className="w-4 h-4 text-brand-accent group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                     </Link>
-                     <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-                        <span>{heroPost.source_institution || 'INSIGHT NOTE'}</span>
-                        <span>•</span>
-                        <span>{heroPost.difficulty || 'Market'} Level</span>
-                     </div>
-                  </div>
-                </div>
-
-                {/* 2. Key Metrics / HUD (Cols 9-12) */}
-                <div className="lg:col-span-4 flex flex-col gap-4 pt-12 lg:pt-0">
-                   <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2 flex justify-between">
-                      <span>Market Context</span>
-                      <span className="text-brand-accent">LIVE</span>
-                   </div>
-                   
-                   {/* Mini Cards */}
-                   <div className="p-4 rounded-sm border border-white/5 bg-white/2 backdrop-blur-sm hover:border-white/10 transition-colors">
-                      <div className="flex justify-between items-end mb-2">
-                         <span className="text-xs text-slate-400 font-mono">VIX Index</span>
-                         <span className="text-brand-accent text-lg font-bold font-mono">13.45</span>
-                      </div>
-                      <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                         <div className="bg-brand-accent w-[30%] h-full" />
-                      </div>
-                   </div>
-
-                   <div className="p-4 rounded-sm border border-white/5 bg-white/2 backdrop-blur-sm hover:border-white/10 transition-colors">
-                      <div className="flex justify-between items-end mb-2">
-                         <span className="text-xs text-slate-400 font-mono">US 10Y Yield</span>
-                         <span className="text-slate-200 text-lg font-bold font-mono">4.12%</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                         <span className="text-(--signal-bear)">+0.05%</span>
-                         <span>Today</span>
-                      </div>
-                   </div>
-                   
-                   {/* Sentiment Radar (Mock Visual) */}
-                   <div className="mt-2 p-4 rounded-sm border border-white/5 bg-white/2 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center relative">
-                         <div className="absolute inset-0 border-t-2 border-brand-accent rounded-full animate-spin duration-[3s]" />
-                         <span className="text-[10px] font-bold">N</span>
-                      </div>
-                      <div>
-                         <div className="text-xs text-slate-300 font-bold">Neutral Sentiment</div>
-                         <div className="text-[10px] text-slate-500">Awaiting Fed Decision</div>
-                      </div>
-                   </div>
-                </div>
+      <div className="max-w-6xl mx-auto px-6 md:px-8 py-8">
+        {/* Hero */}
+        {hero && (
+          <Link href={`/posts/${hero.slug}`} className="group block mb-10">
+            <div className="p-6 md:p-8 rounded-2xl bg-white border border-neutral-100 hover:border-neutral-200 hover:shadow-lg hover:shadow-neutral-100/50 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                {hero.sentiment && (
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                    hero.sentiment === 'bullish' ? 'bg-red-50 text-red-600' :
+                    hero.sentiment === 'bearish' ? 'bg-emerald-50 text-emerald-600' :
+                    'bg-neutral-100 text-neutral-500'
+                  }`}>
+                    {hero.sentiment === 'bullish' ? '看多' : hero.sentiment === 'bearish' ? '看空' : '中性'}
+                  </span>
+                )}
+                {hero.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="text-[11px] text-neutral-400">{tag}</span>
+                ))}
               </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center border border-dashed border-white/10 rounded-xl">
-                <span className="text-slate-500 font-mono">No Insight Available</span>
+              <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 leading-tight mb-3 group-hover:text-blue-600 transition-colors">
+                {hero.title}
+              </h2>
+              <p className="text-base text-neutral-500 leading-relaxed max-w-3xl mb-5">
+                {hero.summary_tldr}
+              </p>
+              <div className="flex items-center gap-4 text-xs text-neutral-400">
+                <span>{hero.source_institution ?? 'InsightNote'}</span>
+                <span>·</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(hero.published_at).toLocaleDateString('zh-CN')}</span>
+                {hero.related_tickers.length > 0 && (<><span>·</span><div className="flex gap-1.5">{hero.related_tickers.slice(0, 3).map((t) => <span key={t} className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-mono">{t}</span>)}</div></>)}
               </div>
-            )}
-          </section>
+            </div>
+          </Link>
+        )}
 
-          {/* Sub-Section: Intelligence Bento Grid */}
-          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 auto-rows-fr">
-             {gridPosts.map(post => (
-               <InsightCard 
-                  key={post.id}
-                  category={post.source_institution || 'Market'} 
-                  title={post.title} 
-                  tickers={post.related_tickers} 
-                  isLocked={post.is_premium}
-                  summary={post.summary_tldr}
-                  date={new Date(post.published_at).toLocaleDateString()}
-               />
-             ))}
-             {gridPosts.length === 0 && !loadError && (
-                <div className="col-span-2 text-center py-12 text-slate-500">
-                   暂无更多情报。
+        {/* Feature Navigation Grid */}
+        <div className="mb-10">
+          <h2 className="text-sm font-semibold text-neutral-900 mb-4">全部功能</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.href} href={item.href} className="group p-4 rounded-xl bg-white border border-neutral-100 hover:border-neutral-200 hover:shadow-md hover:shadow-neutral-100/50 transition-all duration-300">
+                <div className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center mb-3`}>
+                  <item.icon className="w-4 h-4" />
                 </div>
-             )}
-          </section>
-        </main>
+                <h3 className="text-sm font-semibold text-neutral-900 mb-0.5 group-hover:text-blue-600 transition-colors">{item.label}</h3>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-        {/* 右侧栏：量子侧边栏 (The Quantum Sidebar) */} 
-         <aside className="w-80 hidden xl:flex flex-col border-l border-(--border-glass) bg-(--bg-layer-1)/20 backdrop-blur-sm"> 
-           
-           {/* 1. 蝴蝶效应：今日热链 */} 
-           <div className="p-6 border-b border-(--border-glass)"> 
-            <h3 className={`${mono.className} text-xs font-bold text-slate-500 uppercase mb-4 flex items-center gap-2`}> 
-              <Activity className="w-3 h-3" /> 
-              今日蝴蝶效应链 
-            </h3> 
-            <ButterflyChart />
-          </div> 
- 
-           {/* 2. 市场情绪雷达 */} 
-           <div className="p-6"> 
-              <h3 className={`${mono.className} text-xs font-bold text-slate-500 uppercase mb-4`}>市场情绪</h3> 
-              <div className="h-48 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 relative overflow-hidden"> 
-                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05),transparent_70%)]" />
-                 {/* 这里未来放 ECharts 雷达图 */} 
-                 <span className="text-xs text-slate-600 font-mono">情绪雷达图占位符</span> 
-              </div> 
-              <div className="mt-4 flex justify-between text-xs font-mono"> 
-                 <span className="text-slate-400">散户: <span className="text-(--signal-bear)">恐慌</span></span> 
-                 <span className="text-slate-400">机构: <span className="text-(--signal-bull)">贪婪</span></span> 
-              </div> 
-           </div> 
- 
-         </aside> 
+        {/* Articles */}
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-neutral-900">最新研究</h2>
+            <Link href="/posts" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-0.5">查看全部 <ChevronRight className="w-3 h-3" /></Link>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {rest.map((post) => (
+              <Link key={post.id} href={`/posts/${post.slug}`} className="group p-5 rounded-xl bg-white border border-neutral-100 hover:border-neutral-200 hover:shadow-md hover:shadow-neutral-100/50 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-3">
+                  {post.sentiment && (
+                    <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      post.sentiment === 'bullish' ? 'bg-red-50 text-red-600' :
+                      post.sentiment === 'bearish' ? 'bg-emerald-50 text-emerald-600' :
+                      'bg-neutral-100 text-neutral-500'
+                    }`}>
+                      {post.sentiment === 'bullish' ? <ArrowUpRight className="w-3 h-3" /> : post.sentiment === 'bearish' ? <ArrowDownRight className="w-3 h-3" /> : null}
+                      {post.sentiment === 'bullish' ? '看多' : post.sentiment === 'bearish' ? '看空' : '中性'}
+                    </span>
+                  )}
+                  {post.tags.slice(0, 2).map((tag) => <span key={tag} className="text-[10px] text-neutral-400">{tag}</span>)}
+                  {post.is_premium && <span className="ml-auto text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Pro</span>}
+                </div>
+                <h3 className="text-[15px] font-semibold text-neutral-900 mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">{post.title}</h3>
+                <p className="text-[13px] text-neutral-500 line-clamp-2 mb-3">{post.summary_tldr}</p>
+                <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                  <div className="flex items-center gap-2">
+                    <span>{post.source_institution ?? 'InsightNote'}</span>
+                    <span>·</span>
+                    <span>{new Date(post.published_at).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  {post.related_tickers.length > 0 && (
+                    <div className="flex gap-1">{post.related_tickers.slice(0, 2).map((t) => <span key={t} className="px-1.5 py-0.5 bg-neutral-50 rounded text-[10px] font-mono text-neutral-500">{t}</span>)}</div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
-    </main>
+
+      {/* Footer */}
+      <footer className="mt-12 py-6 px-6 md:px-8 border-t border-neutral-100 bg-white">
+        <div className="max-w-6xl mx-auto flex items-center justify-between text-[11px] text-neutral-400">
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-neutral-600">隐私政策</Link>
+            <Link href="/terms" className="hover:text-neutral-600">服务条款</Link>
+            <Link href="/feedback" className="hover:text-neutral-600">意见反馈</Link>
+          </div>
+          <span>&copy; {new Date().getFullYear()} InsightNote</span>
+        </div>
+      </footer>
+    </div>
   );
 }

@@ -1,15 +1,6 @@
-import OpenAI from 'openai';
 import { ButterflyNode } from '@/types';
-
-// IMPORTANT: In a production environment, this key should be in process.env.DEEPSEEK_API_KEY
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-7534f5c8db3e4d9b97ebac2be27e62e6';
-const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
-
-const openai = new OpenAI({
-  baseURL: DEEPSEEK_BASE_URL,
-  apiKey: DEEPSEEK_API_KEY,
-  dangerouslyAllowBrowser: true // Allowed for this demo environment, but use server-side in prod
-});
+import { deepseek, DEEPSEEK_MODEL, isDeepSeekConfigured } from '@/lib/ai-client';
+import { buildAnalyzeContentPrompt, buildVerifyPredictionPrompt, buildMarketInsightPrompt } from '@/lib/prompts';
 
 export interface AnalysisResult {
   summary_tldr: string;
@@ -78,45 +69,20 @@ function getMockAnalysis(text: string): AnalysisResult {
 }
 
 export async function analyzeContent(text: string): Promise<AnalysisResult> {
-  if (!DEEPSEEK_API_KEY) {
+  if (!isDeepSeekConfigured()) {
     console.warn('DEEPSEEK_API_KEY is missing, falling back to mock analysis.');
     return getMockAnalysis(text);
   }
 
   try {
-    const prompt = `
-      You are a professional financial analyst for InsightNote. 
-      Analyze the following financial text (which may be a news snippet, research report, or article) and extract key insights.
-      
-      Output ONLY a valid JSON object with the following structure:
-      {
-        "summary_tldr": "A concise summary in Chinese (max 150 characters)",
-        "tags": ["Tag1", "Tag2"], // Relevant tags in Chinese (e.g. 宏观, 科技, AI)
-        "sentiment": "bullish" | "bearish" | "neutral",
-        "related_tickers": ["AAPL", "BTC-USD"], // Extract stock/crypto tickers mentioned or relevant
-        "difficulty": "easy" | "medium" | "hard",
-        "butterfly_nodes": [
-          // A causal chain graph: Root Event -> Market Reaction -> Sector Impact -> Ticker
-          // At least 4 nodes. type can be: 'root' | 'event' | 'impact' | 'ticker'
-          // Ensure parent_id creates a connected chain. The first node has parent_id: null.
-          // Example:
-          // { "label": "美联储降息", "type": "root", "parent_id": null, "id": "1" },
-          // { "label": "美元走弱", "type": "event", "parent_id": "1", "id": "2" },
-          // { "label": "黄金上涨", "type": "impact", "parent_id": "2", "id": "3" },
-          // { "label": "GLD", "type": "ticker", "parent_id": "3", "id": "4" }
-        ]
-      }
+    const { system, user } = buildAnalyzeContentPrompt(text);
 
-      Text to analyze:
-      "${text.slice(0, 3000).replace(/"/g, '\\"')}"
-    `;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await deepseek.chat.completions.create({
       messages: [
-        { role: 'system', content: 'You are a helpful financial analysis assistant that outputs strictly JSON.' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: system },
+        { role: 'user', content: user }
       ],
-      model: 'deepseek-chat',
+      model: DEEPSEEK_MODEL,
       temperature: 0.1,
       max_tokens: 1024,
       response_format: { type: 'json_object' }
@@ -161,40 +127,19 @@ export async function verifyPrediction(
   targetPrice: number | null,
   marketContext: string
 ): Promise<VerificationResult> {
-  if (!DEEPSEEK_API_KEY) {
+  if (!isDeepSeekConfigured()) {
     return { status: 'active', reason: 'Missing API Key for verification' };
   }
 
   try {
-    const prompt = `
-      You are a strict financial auditor. Verify if the following prediction came true based on the provided market context.
-      
-      Prediction:
-      Symbol: ${symbol}
-      Direction: ${direction} (User expected price to go ${direction === 'bullish' ? 'UP' : direction === 'bearish' ? 'DOWN' : 'SIDEWAYS'})
-      Target Price (if any): ${targetPrice || 'N/A'}
-      
-      Current Market Context (Live Data/News):
-      "${marketContext.slice(0, 1000)}"
+    const { system, user } = buildVerifyPredictionPrompt(symbol, direction, targetPrice, marketContext);
 
-      Task:
-      Determine if the prediction is 'won' (successful), 'lost' (failed), or 'active' (too early to tell/ambiguous).
-      If a Target Price is provided, strictly compare the context price against it.
-      If no Target Price, judge based on the general trend described in context.
-
-      Output ONLY valid JSON:
-      {
-        "status": "won" | "lost" | "active",
-        "reason": "Short explanation in Chinese (max 50 chars)"
-      }
-    `;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await deepseek.chat.completions.create({
       messages: [
-        { role: 'system', content: 'You are a strict financial auditor that outputs strictly JSON.' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: system },
+        { role: 'user', content: user }
       ],
-      model: 'deepseek-chat',
+      model: DEEPSEEK_MODEL,
       temperature: 0.0,
       response_format: { type: 'json_object' }
     });
@@ -219,18 +164,14 @@ export async function verifyPrediction(
  * Generates a short reason for a price move.
  */
 export async function generateMarketInsight(symbol: string, changePercent: number): Promise<string> {
-  if (!DEEPSEEK_API_KEY) return changePercent > 0 ? '强势上涨' : '震荡回调';
+  if (!isDeepSeekConfigured()) return changePercent > 0 ? '强势上涨' : '震荡回调';
 
   try {
-    const prompt = `
-      Provide a very short (max 10 chars) Chinese reason for why ${symbol} moved ${changePercent.toFixed(2)}% today.
-      Be creative but professional (e.g. "AI热潮", "财报超预期", "技术回调").
-      Don't use complete sentences, just a phrase.
-    `;
+    const prompt = buildMarketInsightPrompt(symbol, changePercent);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await deepseek.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'deepseek-chat',
+      model: DEEPSEEK_MODEL,
       temperature: 0.7,
       max_tokens: 20
     });

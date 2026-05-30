@@ -16,9 +16,10 @@ function resolveNext(value: string | string[] | undefined) {
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const nextPath = resolveNext(searchParams?.next);
+  const params = await searchParams;
+  const nextPath = resolveNext(params?.next);
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
