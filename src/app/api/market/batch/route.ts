@@ -1,22 +1,6 @@
 import { NextResponse } from 'next/server';
+import { createDataProvider } from '@/lib/data-provider';
 import { generateMarketInsight } from '@/lib/ai-helper';
-
-function getMockMarketData(symbols: string[]) {
-  const results: Record<string, { price: number; changePercent: number; lastUpdated: string }> = {};
-  
-  symbols.forEach(symbol => {
-    const price = 50 + Math.random() * 450;
-    const changePercent = (Math.random() * 10) - 4.5;
-    
-    results[symbol] = {
-      price: Number(price.toFixed(2)),
-      changePercent: Number(changePercent.toFixed(2)),
-      lastUpdated: new Date().toISOString()
-    };
-  });
-  
-  return results;
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -31,20 +15,39 @@ export async function GET(request: Request) {
   if (symbols.length === 0) {
     return NextResponse.json({ ok: true, data: {} });
   }
-  
-  const data = getMockMarketData(symbols);
 
-  const enrichedData: Record<string, { price: number; changePercent: number; lastUpdated: string; reason?: string }> = { ...data };
-  
-  const insightPromises = symbols.slice(0, 3).map(async (symbol) => {
-    const info = data[symbol];
-    if (info) {
-      const reason = await generateMarketInsight(symbol, info.changePercent);
-      enrichedData[symbol] = { ...info, reason };
+  try {
+    const provider = createDataProvider();
+    const quotes = await provider.getQuotes(symbols);
+
+    const data: Record<string, { price: number; changePercent: number; lastUpdated: string; reason?: string }> = {};
+
+    for (const quote of quotes) {
+      data[quote.symbol] = {
+        price: quote.price,
+        changePercent: quote.changePercent,
+        lastUpdated: quote.timestamp,
+      };
     }
-  });
 
-  await Promise.all(insightPromises);
-  
-  return NextResponse.json({ ok: true, data: enrichedData });
+    // Add AI insights for up to 3 symbols
+    const symbolsWithQuotes = quotes.filter(q => q.price > 0).slice(0, 3);
+    const insightPromises = symbolsWithQuotes.map(async (quote) => {
+      try {
+        const reason = await generateMarketInsight(quote.symbol, quote.changePercent);
+        if (data[quote.symbol]) {
+          data[quote.symbol].reason = reason;
+        }
+      } catch {
+        // Non-critical
+      }
+    });
+
+    await Promise.all(insightPromises);
+    
+    return NextResponse.json({ ok: true, data });
+  } catch (error: any) {
+    console.error('Batch market error:', error);
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
 }

@@ -1,7 +1,7 @@
-import { createClient as createAdminClient } from '@supabase/supabase-js';
-import { getPublicSupabaseUrl } from '@/lib/env';
-import { deepseek, DEEPSEEK_MODEL, isDeepSeekConfigured } from '@/lib/ai-client';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { callAI } from '@/lib/ai-utils';
 import { buildBriefingPrompt } from '@/lib/prompts';
+import { createDataProvider } from '@/lib/data-provider';
 
 export interface UserContext {
   userId: string;
@@ -10,6 +10,28 @@ export interface UserContext {
   watchlist: string[];
   recentArticles: Array<{ title: string; summary_tldr: string; sentiment: string | null; tags: string[] }>;
   recentPredictions: Array<{ symbol: string; direction: string; status: string }>;
+  marketData?: {
+    holdingsQuotes: Array<{ symbol: string; price: number; change: number; changePercent: number }>;
+    watchlistQuotes: Array<{ symbol: string; price: number; change: number; changePercent: number }>;
+  };
+}
+
+async function fetchMarketData(symbols: string[]): Promise<Array<{ symbol: string; price: number; change: number; changePercent: number }>> {
+  if (symbols.length === 0) return [];
+  
+  try {
+    const provider = createDataProvider();
+    const quotes = await provider.getQuotes(symbols);
+    return quotes.map(q => ({
+      symbol: q.symbol,
+      price: q.price,
+      change: q.change,
+      changePercent: q.changePercent,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch market data:', error);
+    return [];
+  }
 }
 
 export async function generateBriefingForUser(ctx: UserContext): Promise<{
@@ -24,70 +46,47 @@ export async function generateBriefingForUser(ctx: UserContext): Promise<{
     return null;
   }
 
-  const symbols = [
-    ...ctx.holdings.map((h) => h.symbol),
-    ...ctx.watchlist,
-  ];
-  const uniqueSymbols = [...new Set(symbols)];
+  // Fetch real-time market data
+  const holdingSymbols = ctx.holdings.map(h => h.symbol);
+  const allSymbols = [...new Set([...holdingSymbols, ...ctx.watchlist])];
+  
+  const [holdingsQuotes, watchlistQuotes] = await Promise.all([
+    fetchMarketData(holdingSymbols),
+    fetchMarketData(ctx.watchlist),
+  ]);
 
-  const holdingsContext = ctx.holdings.length > 0
-    ? `用户持仓：${ctx.holdings.map((h) => `${h.symbol}(${h.name ?? '未知'}, ${h.quantity}股, 成本${h.avg_cost})`).join('；')}`
-    : '用户暂无持仓';
-
-  const watchlistContext = ctx.watchlist.length > 0
-    ? `关注列表：${ctx.watchlist.join('、')}`
-    : '';
-
-  const readingContext = ctx.recentArticles.length > 0
-    ? `最近阅读：${ctx.recentArticles.slice(0, 5).map((a) => `[${a.title}](${a.sentiment ?? 'neutral'})`).join('；')}`
-    : '';
-
-  const predictionContext = ctx.recentPredictions.length > 0
-    ? `历史预测：${ctx.recentPredictions.map((p) => `${p.symbol} ${p.direction}(${p.status})`).join('；')}`
-    : '';
+  ctx.marketData = { holdingsQuotes, watchlistQuotes };
 
   const { system, user } = buildBriefingPrompt(ctx);
 
-  try {
-    const completion = await deepseek.chat.completions.create({
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      model: 'deepseek-chat',
-      temperature: 0.3,
-      max_tokens: 1500,
-      response_format: { type: 'json_object' },
-    });
+  const result = await callAI<{
+    headline?: string;
+    portfolio_summary?: Record<string, unknown>;
+    top_events?: Record<string, unknown>[];
+    watchlist_items?: Record<string, unknown>[];
+    bias_warning?: string | null;
+    ai_analysis?: string;
+  }>({ system, user, temperature: 0.3, maxTokens: 1500, responseFormat: 'json_object' });
 
-    const content = completion.choices[0].message.content;
-    if (!content) return null;
-
-    const result = JSON.parse(content);
-    return {
-      headline: result.headline ?? '今日市场概览',
-      portfolio_summary: result.portfolio_summary ?? {},
-      top_events: Array.isArray(result.top_events) ? result.top_events : [],
-      watchlist_items: Array.isArray(result.watchlist_items) ? result.watchlist_items : [],
-      bias_warning: result.bias_warning ?? null,
-      ai_analysis: result.ai_analysis ?? '',
-    };
-  } catch (error) {
-    console.error('Briefing generation failed:', error);
+  if (!result.success || !result.data) {
+    console.error('Briefing generation failed:', result.error);
     return null;
   }
+
+  const data = result.data;
+  return {
+    headline: data.headline ?? '今日市场概览',
+    portfolio_summary: data.portfolio_summary ?? {},
+    top_events: Array.isArray(data.top_events) ? data.top_events : [],
+    watchlist_items: Array.isArray(data.watchlist_items) ? data.watchlist_items : [],
+    bias_warning: data.bias_warning ?? null,
+    ai_analysis: data.ai_analysis ?? '',
+  };
 }
 
 export async function generateAllBriefings() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? '';
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
-  }
+  const admin = getSupabaseAdmin();
 
-  const supabaseUrl = getPublicSupabaseUrl();
-  const admin = createAdminClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-
-  // Get users with briefing enabled
   const { data: prefs } = await admin
     .from('user_preferences')
     .select('user_id, watchlist')
@@ -97,29 +96,28 @@ export async function generateAllBriefings() {
     return { generated: 0 };
   }
 
-  // Get all user profiles
-  const userIds = prefs.map((p) => p.user_id);
+  const typedPrefs = prefs as Array<{ user_id: string; watchlist: string[] }>;
+  const userIds = typedPrefs.map(p => p.user_id);
   const { data: profiles } = await admin
     .from('profiles')
     .select('id, email')
     .in('id', userIds);
 
   const profileMap = new Map<string, string>();
-  (profiles ?? []).forEach((p) => profileMap.set(p.id, p.email));
+  (profiles ?? []).forEach((p: any) => profileMap.set(p.id, p.email));
 
   let generated = 0;
 
-  for (const pref of prefs) {
+  for (const pref of typedPrefs) {
     const userId = pref.user_id;
     const email = profileMap.get(userId) ?? '';
 
-    // Get holdings
     const { data: portfolios } = await admin
       .from('user_portfolios')
       .select('id')
       .eq('user_id', userId);
 
-    const portfolioIds = (portfolios ?? []).map((p) => p.id);
+    const portfolioIds = (portfolios ?? []).map((p: any) => p.id);
     const { data: holdings } = portfolioIds.length > 0
       ? await admin
           .from('portfolio_holdings')
@@ -127,7 +125,6 @@ export async function generateAllBriefings() {
           .in('portfolio_id', portfolioIds)
       : { data: [] };
 
-    // Get recent reading
     const { data: readings } = await admin
       .from('user_reading_history')
       .select('post_id')
@@ -135,7 +132,7 @@ export async function generateAllBriefings() {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    const postIds = (readings ?? []).map((r) => r.post_id);
+    const postIds = (readings ?? []).map((r: any) => r.post_id);
     const { data: articles } = postIds.length > 0
       ? await admin
           .from('posts')
@@ -143,7 +140,6 @@ export async function generateAllBriefings() {
           .in('id', postIds)
       : { data: [] };
 
-    // Get recent predictions
     const { data: predictions } = await admin
       .from('predictions')
       .select('symbol, direction, status')
@@ -163,8 +159,7 @@ export async function generateAllBriefings() {
     const briefing = await generateBriefingForUser(ctx);
     if (!briefing) continue;
 
-    // Save briefing
-    await admin
+    await (admin as any)
       .from('daily_briefings')
       .upsert(
         {

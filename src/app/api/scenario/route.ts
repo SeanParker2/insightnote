@@ -4,6 +4,30 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { deepseek, DEEPSEEK_MODEL, isDeepSeekConfigured } from '@/lib/ai-client';
 import { buildScenarioPrompt } from '@/lib/prompts';
 
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(Number(searchParams.get('limit')) || 10, 20);
+
+  const { data, error } = await supabase
+    .from('scenario_simulations')
+    .select('*')
+    .eq('user_id', userData.user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: 'database_error' }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, data: data ?? [] });
+}
+
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
   const rl = checkRateLimit(`scenario:${ip}`, { windowMs: 60_000, max: 5 });
@@ -62,7 +86,29 @@ export async function POST(request: Request) {
     }
 
     const result = JSON.parse(content);
-    return NextResponse.json({ ok: true, data: result });
+
+    // Save to database
+    const { data: savedSimulation, error: saveError } = await supabase
+      .from('scenario_simulations')
+      .insert({
+        user_id: userData.user.id,
+        scenario: scenario,
+        result: result,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('Failed to save scenario simulation:', saveError);
+      // Still return the result even if saving fails
+    }
+
+    return NextResponse.json({ 
+      ok: true, 
+      data: result,
+      saved_id: savedSimulation?.id,
+    });
   } catch {
     return NextResponse.json({ ok: false, error: 'ai_error' }, { status: 500 });
   }

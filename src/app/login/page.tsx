@@ -30,14 +30,14 @@ export default async function LoginPage({
   const loginHref = `/login?next=${encodeURIComponent(nextPath)}`;
 
   return (
-    <div className="min-h-screen bg-white py-16">
-      <div className="max-w-3xl mx-auto px-6">
-        <h1 className={`${playfair.className} text-4xl font-bold text-slate-900`}>账号系统</h1>
-        <p className="mt-4 text-sm text-slate-600">
-          登录后将自动校验你的身份与 Pro 权益，并在访问内容时进行权限判断。
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+        <h1 className={`${playfair.className} text-3xl font-bold text-text-primary mb-2`}>登录</h1>
+        <p className="text-sm text-text-secondary mb-8">
+          登录后将自动校验你的身份与 Pro 权益。
         </p>
 
-        <div className="mt-10">
+        <div className="p-6 rounded-xl bg-surface-1 border border-border-default">
           <LoginControl
             variant="page"
             forceExpanded
@@ -46,20 +46,14 @@ export default async function LoginPage({
           />
         </div>
 
-        <div className="mt-6">
-          <Button asChild variant="outline">
-            <TrackedLink href="/signup" eventName="login_page_signup_click">
-              没有账号？去注册
-            </TrackedLink>
-          </Button>
+        <div className="mt-4 text-center">
+          <TrackedLink href="/signup" eventName="login_page_signup_click" className="text-xs text-text-tertiary hover:text-text-secondary transition-colors">
+            没有账号？去注册
+          </TrackedLink>
         </div>
 
-        <div className="mt-6 text-xs text-slate-500">
-          登录后将自动跳转至：{nextPath}
-          <span className="ml-2 text-slate-300">|</span>
-          <a className="ml-2 text-brand-900 hover:text-brand-gold" href={loginHref}>
-            刷新此页面
-          </a>
+        <div className="mt-6 text-[11px] text-text-tertiary text-center">
+          登录后将跳转至：{nextPath}
         </div>
       </div>
     </div>

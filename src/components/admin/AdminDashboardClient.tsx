@@ -421,15 +421,16 @@ export function AdminDashboardClient() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">文章列表</div>
+      <div className="lg:col-span-5 rounded-xl border border-border-default bg-surface-1 overflow-hidden">
+        <div className="p-4 border-b border-border-default flex items-center justify-between gap-3">
+          <div className="text-sm font-semibold text-text-primary">文章列表</div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => void loadPosts()} disabled={loading}>
               刷新
             </Button>
-            <Button
-              className="bg-brand-900 hover:bg-brand-800"
+
+              <Button
+
               onClick={() => {
                 resetEditor();
                 trackEvent('admin_post_new_click', {});
@@ -440,7 +441,7 @@ export function AdminDashboardClient() {
           </div>
         </div>
 
-        {loadError ? <div className="p-4 text-sm text-red-600">{loadError}</div> : null}
+        {loadError ? <div className="p-4 text-sm text-signal-up">{loadError}</div> : null}
 
         <Table>
           <TableHeader>
@@ -453,13 +454,13 @@ export function AdminDashboardClient() {
           <TableBody>
             {loading && rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-sm text-slate-500">
+                <TableCell colSpan={3} className="text-sm text-text-tertiary">
                   加载中…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-sm text-slate-500">
+                <TableCell colSpan={3} className="text-sm text-text-tertiary">
                   暂无文章。
                 </TableCell>
               </TableRow>
@@ -470,7 +471,7 @@ export function AdminDashboardClient() {
                   <TableRow
                     key={r.id}
                     data-state={selected ? 'selected' : undefined}
-                    className={selected ? 'bg-slate-50' : undefined}
+                    className={selected ? 'bg-surface-2' : undefined}
                     onClick={() => {
                       setSelectedId(r.id);
                       void loadPostDetail(r.id);
@@ -478,15 +479,15 @@ export function AdminDashboardClient() {
                     style={{ cursor: 'pointer' }}
                   >
                     <TableCell className="max-w-[260px] truncate">
-                      <div className="font-medium text-slate-900 truncate">{r.title || '（无标题）'}</div>
-                      <div className="text-xs text-slate-500 truncate">{r.slug}</div>
+                      <div className="font-medium text-text-primary truncate">{r.title || '（无标题）'}</div>
+                      <div className="text-xs text-text-tertiary truncate">{r.slug}</div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {r.is_premium ? <Badge>专业版</Badge> : <Badge variant="outline">免费</Badge>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs text-slate-600">{r.published_at ? r.published_at.slice(0, 10) : '—'}</TableCell>
+                    <TableCell className="text-xs text-text-secondary">{r.published_at ? r.published_at.slice(0, 10) : '—'}</TableCell>
                   </TableRow>
                 );
               })
@@ -495,9 +496,9 @@ export function AdminDashboardClient() {
         </Table>
       </div>
 
-      <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">{selectedId ? '编辑文章' : '新建文章'}</div>
+      <div className="lg:col-span-7 rounded-xl border border-border-default bg-surface-1">
+        <div className="p-4 border-b border-border-default flex items-center justify-between gap-3">
+          <div className="text-sm font-semibold text-text-primary">{selectedId ? '编辑文章' : '新建文章'}</div>
           <div className="flex items-center gap-2">
             {selectedRow ? (
               <Button asChild variant="outline">
@@ -517,11 +518,11 @@ export function AdminDashboardClient() {
               设为现在发布
             </Button>
             {selectedId ? (
-              <Button className="bg-brand-900 hover:bg-brand-800" onClick={() => void onSave()} disabled={saving}>
+              <Button onClick={() => void onSave()} disabled={saving}>
                 {saving ? '保存中…' : '保存'}
               </Button>
             ) : (
-              <Button className="bg-brand-900 hover:bg-brand-800" onClick={() => void onCreate()} disabled={saving}>
+              <Button onClick={() => void onCreate()} disabled={saving}>
                 {saving ? '创建中…' : '创建'}
               </Button>
             )}
@@ -529,23 +530,23 @@ export function AdminDashboardClient() {
         </div>
 
         <div className="p-4 space-y-4">
-          {saveError ? <div className="text-sm text-red-600">{saveError}</div> : null}
-          {saveSuccess ? <div className="text-sm text-emerald-700">{saveSuccess}</div> : null}
+          {saveError ? <div className="text-sm text-signal-up">{saveError}</div> : null}
+          {saveSuccess ? <div className="text-sm text-signal-down">{saveSuccess}</div> : null}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Slug</span>
+              <span className="text-sm font-medium text-text-secondary">Slug</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="例如 great-rotation-tech-utilities"
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">标题</span>
+              <span className="text-sm font-medium text-text-secondary">标题</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="文章标题"
@@ -554,9 +555,9 @@ export function AdminDashboardClient() {
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">TL;DR</span>
+            <span className="text-sm font-medium text-text-secondary">TL;DR</span>
             <textarea
-              className="min-h-[80px] rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus-visible:border-slate-400"
+              className="min-h-[80px] rounded-md border border-border-default px-3 py-2 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={summaryTldr}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSummaryTldr(e.target.value)}
               placeholder="一句话要点摘要"
@@ -564,10 +565,10 @@ export function AdminDashboardClient() {
           </label>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+            <label className="flex items-center justify-between rounded-lg border border-border-default p-4">
               <div>
-                <div className="text-sm font-semibold text-slate-900">Pro 内容</div>
-                <div className="mt-1 text-xs text-slate-500">开启后未订阅用户将看到锁定版本</div>
+                <div className="text-sm font-semibold text-text-primary">Pro 内容</div>
+                <div className="mt-1 text-xs text-text-tertiary">开启后未订阅用户将看到锁定版本</div>
               </div>
               <input
                 type="checkbox"
@@ -577,10 +578,10 @@ export function AdminDashboardClient() {
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">发布时间</span>
+              <span className="text-sm font-medium text-text-secondary">发布时间</span>
               <input
                 type="datetime-local"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={publishedAt}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPublishedAt(e.target.value)}
               />
@@ -589,45 +590,45 @@ export function AdminDashboardClient() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">机构</span>
+              <span className="text-sm font-medium text-text-secondary">机构</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={sourceInstitution}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSourceInstitution(e.target.value)}
                 placeholder="例如 Goldman Sachs"
               />
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">来源日期</span>
+              <span className="text-sm font-medium text-text-secondary">来源日期</span>
               <input
                 type="date"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={sourceDate}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSourceDate(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">标签（逗号分隔）</span>
+              <span className="text-sm font-medium text-text-secondary">标签（逗号分隔）</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="AI, Utilities, Macro"
               />
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">关联标的</span>
+              <span className="text-sm font-medium text-text-secondary">关联标的</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={relatedTickers}
                 onChange={(e) => setRelatedTickers(e.target.value)}
                 placeholder="AAPL, BTC"
               />
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">情绪</span>
+              <span className="text-sm font-medium text-text-secondary">情绪</span>
               <select
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={sentiment}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSentiment(e.target.value as any)}
               >
@@ -638,9 +639,9 @@ export function AdminDashboardClient() {
               </select>
             </label>
             <label className="flex flex-col gap-2 md:col-span-1">
-              <span className="text-sm font-medium text-slate-700">难度</span>
+              <span className="text-sm font-medium text-text-secondary">难度</span>
               <select
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={difficulty}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard' | '')}
               >
@@ -653,9 +654,9 @@ export function AdminDashboardClient() {
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">锁定时展示内容（MDX）</span>
+            <span className="text-sm font-medium text-text-secondary">锁定时展示内容（MDX）</span>
             <textarea
-              className="min-h-[200px] rounded-md border border-slate-200 px-3 py-2 text-sm font-mono outline-none focus-visible:border-slate-400"
+              className="min-h-[200px] rounded-md border border-border-default px-3 py-2 text-sm font-mono outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={teaserMdx}
               onChange={(e) => setTeaserMdx(e.target.value)}
               placeholder="未解锁时展示的内容（可放摘要、部分章节）"
@@ -663,9 +664,9 @@ export function AdminDashboardClient() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">全文内容（MDX）</span>
+            <span className="text-sm font-medium text-text-secondary">全文内容（MDX）</span>
             <textarea
-              className="min-h-[380px] rounded-md border border-slate-200 px-3 py-2 text-sm font-mono outline-none focus-visible:border-slate-400"
+              className="min-h-[380px] rounded-md border border-border-default px-3 py-2 text-sm font-mono outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={fullMdx}
               onChange={(e) => setFullMdx(e.target.value)}
               placeholder="解锁后展示的完整内容"
@@ -673,9 +674,9 @@ export function AdminDashboardClient() {
           </label>
 
           {selectedId ? (
-            <div className="rounded-lg border border-slate-200 p-4 mt-4">
+            <div className="rounded-lg border border-border-default p-4 mt-4">
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-semibold text-slate-900">蝴蝶效应图谱节点</div>
+                <div className="text-sm font-semibold text-text-primary">蝴蝶效应图谱节点</div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="outline">添加节点</Button>
@@ -689,13 +690,13 @@ export function AdminDashboardClient() {
                 </Dialog>
               </div>
               <div className="space-y-2">
-                {butterflyNodes.length === 0 ? <div className="text-xs text-slate-500">暂无节点</div> : null}
+                {butterflyNodes.length === 0 ? <div className="text-xs text-text-tertiary">暂无节点</div> : null}
                 {butterflyNodes.map((node) => (
-                  <div key={node.id} className="flex items-center justify-between gap-2 text-sm border border-slate-100 bg-slate-50 p-2 rounded">
+                  <div key={node.id} className="flex items-center justify-between gap-2 text-sm border border-border-default bg-surface-2 p-2 rounded">
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">{node.type}</Badge>
                       <span>{node.label}</span>
-                      {node.parent_id ? <span className="text-xs text-slate-400">← {butterflyNodes.find(n => n.id === node.parent_id)?.label}</span> : null}
+                      {node.parent_id ? <span className="text-xs text-text-tertiary">← {butterflyNodes.find(n => n.id === node.parent_id)?.label}</span> : null}
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => void onDeleteNode(node.id)} className="h-6 w-6 p-0 text-red-500">×</Button>
                   </div>
@@ -736,7 +737,7 @@ function NodeForm({ onSave, nodes }: { onSave: (l: string, t: string, p: string 
       <div className="grid grid-cols-4 items-center gap-4">
         <span className="text-right text-sm font-medium">Label</span>
         <input 
-          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400" 
+          className="col-span-3 h-9 border border-border-default rounded px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40" 
           value={label} 
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLabel(e.target.value)} 
           placeholder="节点名称"
@@ -745,7 +746,7 @@ function NodeForm({ onSave, nodes }: { onSave: (l: string, t: string, p: string 
       <div className="grid grid-cols-4 items-center gap-4">
         <span className="text-right text-sm font-medium">Type</span>
         <select 
-          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400 bg-white" 
+          className="col-span-3 h-9 border border-border-default rounded px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40 bg-surface-1" 
           value={type} 
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setType(e.target.value)}
         >
@@ -758,7 +759,7 @@ function NodeForm({ onSave, nodes }: { onSave: (l: string, t: string, p: string 
       <div className="grid grid-cols-4 items-center gap-4">
         <span className="text-right text-sm font-medium">Parent</span>
         <select 
-          className="col-span-3 h-9 border border-slate-200 rounded px-3 text-sm outline-none focus:border-slate-400 bg-white" 
+          className="col-span-3 h-9 border border-border-default rounded px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40 bg-surface-1" 
           value={parentId} 
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setParentId(e.target.value)}
         >

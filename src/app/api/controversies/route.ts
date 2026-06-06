@@ -103,16 +103,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'invalid_input' }, { status: 400 });
   }
 
-  // Only admin can create controversies (for now)
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_admin')
     .eq('id', userData.user.id)
     .maybeSingle();
 
-  if (!profile?.is_admin) {
-    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-  }
+  // Allow all authenticated users to create controversies
+  // Non-admin users will have status 'pending' for review
+  const isAdmin = profile?.is_admin === true;
 
   const { data: controversy, error } = await supabase
     .from('controversies')
@@ -122,6 +121,7 @@ export async function POST(request: Request) {
       description: typeof body.description === 'string' ? body.description.trim() : null,
       symbol: typeof body.symbol === 'string' ? body.symbol.trim().toUpperCase() : null,
       topic_tags: Array.isArray(body.topic_tags) ? body.topic_tags.slice(0, 10) : [],
+      status: isAdmin ? 'active' : 'pending',
       created_by: userData.user.id,
     })
     .select()

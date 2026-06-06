@@ -1,5 +1,5 @@
 import { ButterflyNode } from '@/types';
-import { deepseek, DEEPSEEK_MODEL, isDeepSeekConfigured } from '@/lib/ai-client';
+import { callAI } from '@/lib/ai-utils';
 import { buildAnalyzeContentPrompt, buildVerifyPredictionPrompt, buildMarketInsightPrompt } from '@/lib/prompts';
 
 export interface AnalysisResult {
@@ -16,11 +16,9 @@ export interface VerificationResult {
   reason: string;
 }
 
-// Fallback logic in case API fails
 function getMockAnalysis(text: string): AnalysisResult {
   const lowerText = text.toLowerCase();
   
-  // 1. Sentiment Analysis (Fallback)
   let sentiment: AnalysisResult['sentiment'] = 'neutral';
   if (lowerText.includes('growth') || lowerText.includes('bull') || lowerText.includes('up') || lowerText.includes('增长') || lowerText.includes('看多')) {
     sentiment = 'bullish';
@@ -28,7 +26,6 @@ function getMockAnalysis(text: string): AnalysisResult {
     sentiment = 'bearish';
   }
 
-  // 2. Tags (Fallback)
   const commonTags = [
     { en: 'AI', cn: 'AI' },
     { en: 'Macro', cn: '宏观' },
@@ -45,19 +42,14 @@ function getMockAnalysis(text: string): AnalysisResult {
   });
   if (tags.length === 0) tags.push('市场');
 
-  // 3. Tickers (Fallback)
   const tickerRegex = /\b[A-Z]{2,5}\b/g;
   const potentialTickers = text.match(tickerRegex) || [];
   const commonWords = ['THE', 'AND', 'FOR', 'BUT', 'NOT', 'YES', 'WHO', 'WHY'];
   const related_tickers = Array.from(new Set(potentialTickers.filter(t => !commonWords.includes(t)))).slice(0, 5);
 
-  // 4. Summary (Fallback)
   const summary_tldr = text.slice(0, 150) + (text.length > 150 ? '...' : '');
-
-  // 5. Difficulty (Fallback)
   const difficulty = text.length > 2000 ? 'hard' : text.length > 1000 ? 'medium' : 'easy';
 
-  // 6. Butterfly Nodes (Fallback)
   const nodes: AnalysisResult['butterfly_nodes'] = [
     { label: '核心事件', type: 'root', parent_id: null },
     { label: '市场反应', type: 'event', parent_id: 'root-placeholder' },
@@ -69,115 +61,61 @@ function getMockAnalysis(text: string): AnalysisResult {
 }
 
 export async function analyzeContent(text: string): Promise<AnalysisResult> {
-  if (!isDeepSeekConfigured()) {
-    console.warn('DEEPSEEK_API_KEY is missing, falling back to mock analysis.');
+  const { system, user } = buildAnalyzeContentPrompt(text);
+
+  const result = await callAI<AnalysisResult>(
+    { system, user, temperature: 0.1, maxTokens: 1024, responseFormat: 'json_object' }
+  );
+
+  if (!result.success || !result.data) {
     return getMockAnalysis(text);
   }
 
-  try {
-    const { system, user } = buildAnalyzeContentPrompt(text);
-
-    const completion = await deepseek.chat.completions.create({
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      model: DEEPSEEK_MODEL,
-      temperature: 0.1,
-      max_tokens: 1024,
-      response_format: { type: 'json_object' }
-    });
-
-    const content = completion.choices[0].message.content;
-
-    if (!content) {
-      throw new Error('Empty response from DeepSeek API');
-    }
-
-    const result = JSON.parse(content);
-    
-    // Post-processing to ensure valid structure
-    return {
-      summary_tldr: result.summary_tldr || '',
-      tags: Array.isArray(result.tags) ? result.tags : [],
-      sentiment: ['bullish', 'bearish', 'neutral'].includes(result.sentiment) ? result.sentiment : 'neutral',
-      related_tickers: Array.isArray(result.related_tickers) ? result.related_tickers : [],
-      difficulty: ['easy', 'medium', 'hard'].includes(result.difficulty) ? result.difficulty : 'medium',
-      butterfly_nodes: Array.isArray(result.butterfly_nodes) ? result.butterfly_nodes.map((n: any) => ({
-        label: n.label || 'Node',
-        type: ['root', 'event', 'impact', 'ticker'].includes(n.type) ? n.type : 'event',
-        parent_id: n.parent_id,
-        tickerSymbol: n.type === 'ticker' ? (n.label || n.tickerSymbol) : undefined
-      })) : []
-    };
-
-  } catch (error) {
-    console.error('AI Analysis failed, falling back to mock:', error);
-    return getMockAnalysis(text);
-  }
+  const data = result.data;
+  return {
+    summary_tldr: data.summary_tldr || '',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    sentiment: ['bullish', 'bearish', 'neutral'].includes(data.sentiment) ? data.sentiment : 'neutral',
+    related_tickers: Array.isArray(data.related_tickers) ? data.related_tickers : [],
+    difficulty: ['easy', 'medium', 'hard'].includes(data.difficulty) ? data.difficulty : 'medium',
+    butterfly_nodes: Array.isArray(data.butterfly_nodes) ? data.butterfly_nodes.map((n) => ({
+      label: n.label || 'Node',
+      type: (['root', 'event', 'impact', 'ticker'].includes(n.type) ? n.type : 'event') as ButterflyNode['type'],
+      parent_id: n.parent_id,
+      tickerSymbol: n.type === 'ticker' ? (n.label || n.tickerSymbol) : undefined
+    })) : []
+  };
 }
 
-/**
- * AI-Powered Prediction Verification
- * Compares a prediction against market context (text) to determine outcome.
- */
 export async function verifyPrediction(
   symbol: string,
   direction: string,
   targetPrice: number | null,
   marketContext: string
 ): Promise<VerificationResult> {
-  if (!isDeepSeekConfigured()) {
-    return { status: 'active', reason: 'Missing API Key for verification' };
-  }
+  const { system, user } = buildVerifyPredictionPrompt(symbol, direction, targetPrice, marketContext);
 
-  try {
-    const { system, user } = buildVerifyPredictionPrompt(symbol, direction, targetPrice, marketContext);
+  const result = await callAI<VerificationResult>(
+    { system, user, temperature: 0, responseFormat: 'json_object' }
+  );
 
-    const completion = await deepseek.chat.completions.create({
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      model: DEEPSEEK_MODEL,
-      temperature: 0.0,
-      response_format: { type: 'json_object' }
-    });
-
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error('Empty verification response');
-    
-    const result = JSON.parse(content);
-    return {
-      status: ['won', 'lost', 'active'].includes(result.status) ? result.status : 'active',
-      reason: result.reason || 'Verification pending'
-    };
-
-  } catch (error) {
-    console.error('AI Verification failed:', error);
+  if (!result.success || !result.data) {
     return { status: 'active', reason: 'AI Verification unavailable' };
   }
+
+  const data = result.data;
+  return {
+    status: ['won', 'lost', 'active'].includes(data.status) ? data.status : 'active',
+    reason: data.reason || 'Verification pending',
+  };
 }
 
-/**
- * AI-Powered Market Insight Generation
- * Generates a short reason for a price move.
- */
 export async function generateMarketInsight(symbol: string, changePercent: number): Promise<string> {
-  if (!isDeepSeekConfigured()) return changePercent > 0 ? '强势上涨' : '震荡回调';
+  const prompt = buildMarketInsightPrompt(symbol, changePercent);
 
-  try {
-    const prompt = buildMarketInsightPrompt(symbol, changePercent);
+  const result = await callAI<string>(
+    { system: '', user: prompt, temperature: 0.7, maxTokens: 20 }
+  );
 
-    const completion = await deepseek.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: DEEPSEEK_MODEL,
-      temperature: 0.7,
-      max_tokens: 20
-    });
-
-    return completion.choices[0].message.content?.trim() || (changePercent > 0 ? '资金流入' : '获利了结');
-  } catch {
-    return changePercent > 0 ? '资金流入' : '获利了结';
-  }
+  return result.success && result.data ? result.data : (changePercent > 0 ? '资金流入' : '获利了结');
 }

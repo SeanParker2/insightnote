@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { GraphVisualization } from '@/components/graph/GraphVisualization';
+import { List, GitBranch } from 'lucide-react';
 
 type NodeData = {
   id: string;
@@ -31,6 +33,7 @@ export default function GraphEditorPage() {
   const [saved, setSaved] = useState(false);
   const [history, setHistory] = useState<NodeData[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
 
   // Push to history on node change
   function pushHistory(newNodes: NodeData[]) {
@@ -131,17 +134,33 @@ export default function GraphEditorPage() {
   const selected = nodes.find((n) => n.id === selectedNode);
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-surface-1 pb-20">
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">蝴蝶效应图谱编辑器</h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <h1 className="text-3xl font-bold text-text-primary">蝴蝶效应图谱编辑器</h1>
+            <p className="mt-2 text-sm text-text-tertiary">
               构建你的因果传导链路，分享你的投资逻辑
             </p>
           </div>
           <div className="flex gap-2">
+            <div className="flex rounded-lg border border-border-default overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-brand text-white' : 'bg-surface-2 text-text-secondary hover:bg-surface-3'}`}
+              >
+                <List className="w-3.5 h-3.5" />
+                列表
+              </button>
+              <button
+                onClick={() => setViewMode('graph')}
+                className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${viewMode === 'graph' ? 'bg-brand text-white' : 'bg-surface-2 text-text-secondary hover:bg-surface-3'}`}
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                图谱
+              </button>
+            </div>
             <Button variant="outline" size="sm" onClick={undo} disabled={historyIndex <= 0}>
               撤销
             </Button>
@@ -163,7 +182,7 @@ export default function GraphEditorPage() {
         {/* Templates */}
         {nodes.length === 0 && (
           <div className="mb-8">
-            <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">快速模板</div>
+            <div className="text-xs text-text-tertiary uppercase tracking-wider mb-3">快速模板</div>
             <div className="flex flex-wrap gap-2">
               {[
                 { name: '利率传导', nodes: [{ label: '央行降息', type: 'root' }, { label: '债券收益率下降', type: 'event' }, { label: '资金流入股市', type: 'impact' }, { label: '沪深300', type: 'ticker' }] },
@@ -173,7 +192,7 @@ export default function GraphEditorPage() {
               ].map((tpl) => (
                 <button
                   key={tpl.name}
-                  className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-600 hover:border-brand-900 hover:text-brand-900 transition-colors"
+                  className="px-3 py-2 rounded-lg border border-border-default text-xs text-text-secondary hover:border-brand hover:text-brand-light transition-colors"
                   onClick={() => {
                     setTitle(tpl.name);
                     setNodes(tpl.nodes.map((n, i) => ({
@@ -196,19 +215,19 @@ export default function GraphEditorPage() {
         {/* Graph Meta */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-slate-600">图谱标题</span>
-            <input className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：美联储降息传导链" />
+            <span className="text-xs font-medium text-text-secondary">图谱标题</span>
+            <input className="h-10 rounded-md border border-border-default px-3 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：美联储降息传导链" />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-slate-600">描述（可选）</span>
-            <input className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="简要说明这个图谱的逻辑" />
+            <span className="text-xs font-medium text-text-secondary">描述（可选）</span>
+            <input className="h-10 rounded-md border border-border-default px-3 text-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="简要说明这个图谱的逻辑" />
           </label>
         </div>
 
         <div className="flex items-center gap-3 mb-8">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-            <span className="text-sm text-slate-600">公开发布</span>
+            <span className="text-sm text-text-secondary">公开发布</span>
           </label>
         </div>
 
@@ -225,12 +244,18 @@ export default function GraphEditorPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chain Visualization */}
           <div className="lg:col-span-2">
-            <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">传导链路</h3>
-            {nodes.length === 0 ? (
-              <div className="p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-400">
+            <h3 className="text-sm font-bold text-text-tertiary uppercase mb-4">传导链路</h3>
+            {viewMode === 'graph' ? (
+              <GraphVisualization 
+                nodes={nodes} 
+                onNodeClick={setSelectedNode}
+                selectedNode={selectedNode}
+              />
+            ) : nodes.length === 0 ? (
+              <div className="p-12 rounded-xl border border-dashed border-border-default text-center text-text-tertiary">
                 点击上方按钮添加节点，构建因果传导链路
               </div>
-            ) : (
+            ) : viewMode === 'list' ? (
               <div className="space-y-2">
                 {nodes.map((node, i) => {
                   const typeInfo = NODE_TYPES.find((t) => t.value === node.type);
@@ -239,20 +264,20 @@ export default function GraphEditorPage() {
                       {i > 0 && (
                         <div className="flex items-center justify-center py-1">
                           <div className="w-px h-4 bg-slate-300" />
-                          <span className="text-[10px] text-slate-400 mx-2">
+                          <span className="text-[10px] text-text-tertiary mx-2">
                             {node.probability ? `${(node.probability * 100).toFixed(0)}%概率` : '→'}
                           </span>
                           <div className="w-px h-4 bg-slate-300" />
                         </div>
                       )}
                       <div
-                        className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedNode === node.id ? 'border-brand-900 ring-2 ring-brand-900/20 bg-white' : 'border-slate-200 bg-slate-50 hover:border-slate-300'}`}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedNode === node.id ? 'border-brand ring-2 ring-brand/20 bg-surface-1' : 'border-border-default bg-surface-2 hover:border-border-default'}`}
                         onClick={() => setSelectedNode(node.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className={`w-3 h-3 rounded-full ${typeInfo?.color ?? 'bg-slate-400'}`} />
-                            <span className="font-bold text-slate-900">{node.label}</span>
+                            <span className="font-bold text-text-primary">{node.label}</span>
                             <Badge variant="outline" className="text-[10px]">{typeInfo?.label ?? node.type}</Badge>
                             {node.impact_direction && (
                               <Badge variant={node.impact_direction === 'bullish' ? 'default' : node.impact_direction === 'bearish' ? 'destructive' : 'secondary'} className="text-[10px]">
@@ -269,26 +294,26 @@ export default function GraphEditorPage() {
                   );
                 })}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Node Editor */}
           <div>
-            <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">节点编辑</h3>
+            <h3 className="text-sm font-bold text-text-tertiary uppercase mb-4">节点编辑</h3>
             {selected ? (
-              <div className="p-5 rounded-xl border border-slate-200 space-y-4">
+              <div className="p-5 rounded-xl border border-border-default space-y-4">
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-600">标签</span>
+                  <span className="text-xs font-medium text-text-secondary">标签</span>
                   <input
-                    className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+                    className="h-9 rounded-md border border-border-default px-3 text-sm"
                     value={selected.label}
                     onChange={(e) => updateNode(selected.id, { label: e.target.value })}
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-600">类型</span>
+                  <span className="text-xs font-medium text-text-secondary">类型</span>
                   <select
-                    className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+                    className="h-9 rounded-md border border-border-default px-3 text-sm"
                     value={selected.type}
                     onChange={(e) => updateNode(selected.id, { type: e.target.value as NodeData['type'] })}
                   >
@@ -296,9 +321,9 @@ export default function GraphEditorPage() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-600">传导概率 (0-1)</span>
+                  <span className="text-xs font-medium text-text-secondary">传导概率 (0-1)</span>
                   <input
-                    className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+                    className="h-9 rounded-md border border-border-default px-3 text-sm"
                     type="number"
                     min={0}
                     max={1}
@@ -309,9 +334,9 @@ export default function GraphEditorPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-600">影响方向</span>
+                  <span className="text-xs font-medium text-text-secondary">影响方向</span>
                   <select
-                    className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+                    className="h-9 rounded-md border border-border-default px-3 text-sm"
                     value={selected.impact_direction ?? ''}
                     onChange={(e) => updateNode(selected.id, { impact_direction: e.target.value || null })}
                   >
@@ -322,9 +347,9 @@ export default function GraphEditorPage() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-600">连接到</span>
+                  <span className="text-xs font-medium text-text-secondary">连接到</span>
                   <select
-                    className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+                    className="h-9 rounded-md border border-border-default px-3 text-sm"
                     value={selected.parent_id ?? ''}
                     onChange={(e) => updateNode(selected.id, { parent_id: e.target.value || null })}
                   >
@@ -336,7 +361,7 @@ export default function GraphEditorPage() {
                 </label>
               </div>
             ) : (
-              <div className="p-8 rounded-xl border border-dashed border-slate-300 text-center text-slate-400 text-sm">
+              <div className="p-8 rounded-xl border border-dashed border-border-default text-center text-text-tertiary text-sm">
                 点击左侧节点进行编辑
               </div>
             )}

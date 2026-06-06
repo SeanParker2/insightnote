@@ -129,13 +129,19 @@ export function buildMarketInsightPrompt(symbol: string, changePercent: number):
 
 export function buildBriefingPrompt(ctx: UserContext): { system: string; user: string } {
   const holdingsContext = ctx.holdings.length > 0
-    ? ctx.holdings.map((h: { symbol: string; name: string | null; quantity: number; avg_cost: number; sector: string | null }) =>
-        `- ${h.symbol}（${h.name ?? '未知'}）：持有${h.quantity}股，成本${h.avg_cost}元${h.sector ? `，板块：${h.sector}` : ''}`
-      ).join('\n')
+    ? ctx.holdings.map((h: { symbol: string; name: string | null; quantity: number; avg_cost: number; sector: string | null }) => {
+        const quote = ctx.marketData?.holdingsQuotes?.find(q => q.symbol === h.symbol);
+        const priceInfo = quote ? `，当前价 ${quote.price.toFixed(2)}，今日涨跌 ${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%` : '';
+        return `- ${h.symbol}（${h.name ?? '未知'}）：持有${h.quantity}股，成本${h.avg_cost}元${h.sector ? `，板块：${h.sector}` : ''}${priceInfo}`;
+      }).join('\n')
     : '用户暂无持仓';
 
   const watchlistContext = ctx.watchlist.length > 0
-    ? `关注列表：${ctx.watchlist.join('、')}`
+    ? ctx.watchlist.map(symbol => {
+        const quote = ctx.marketData?.watchlistQuotes?.find(q => q.symbol === symbol);
+        const priceInfo = quote ? ` ${quote.price.toFixed(2)} (${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%)` : '';
+        return `${symbol}${priceInfo}`;
+      }).join('、')
     : '';
 
   const readingContext = ctx.recentArticles.length > 0
@@ -166,10 +172,10 @@ export function buildBriefingPrompt(ctx: UserContext): { system: string; user: s
 
     user: `请为以下用户生成今日个性化晨报：
 
-【用户持仓】
+【用户持仓】（含实时行情数据）
 ${holdingsContext}
 
-${watchlistContext ? `【关注列表】\n${watchlistContext}\n` : ''}
+${watchlistContext ? `【关注列表】（含实时行情）\n${watchlistContext}\n` : ''}
 ${readingContext ? `【最近阅读】\n${readingContext}\n` : ''}
 ${predictionContext ? `【历史预测】\n${predictionContext}\n` : ''}
 
@@ -178,9 +184,9 @@ ${predictionContext ? `【历史预测】\n${predictionContext}\n` : ''}
   "headline": "今日核心看点（30字以内，要有吸引力）",
   "portfolio_summary": {
     "holdings": [
-      {"symbol": "代码", "name": "名称", "change_pct": 预估涨跌幅数字, "news": "一句话相关新闻"}
+      {"symbol": "代码", "name": "名称", "change_pct": 基于实时数据的涨跌幅, "news": "一句话相关新闻"}
     ],
-    "total_change_pct": 组合整体预估涨跌幅,
+    "total_change_pct": 组合整体涨跌幅（基于实时数据计算）,
     "best_performer": "最佳标的代码",
     "worst_performer": "最差标的代码"
   },
@@ -204,7 +210,8 @@ ${predictionContext ? `【历史预测】\n${predictionContext}\n` : ''}
 - top_events 最多3个，按重要性排序
 - butterfly_chain 每个节点不超过8个字
 - 如果用户阅读偏好明显偏向某一方，bias_warning 给出提醒
-- ai_analysis 不要复述新闻，要给出"所以呢？"的解读`,
+- ai_analysis 不要复述新闻，要给出"所以呢？"的解读
+- 涨跌幅请使用提供的实时行情数据，不要预估`,
   };
 }
 

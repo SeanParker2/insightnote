@@ -569,13 +569,13 @@ export function AccountSecurity() {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="text-base font-bold text-slate-900">账号安全</div>
+    <div className="rounded-xl border border-border-default bg-surface-1 p-6 ">
+      <div className="text-base font-bold text-text-primary">账号安全</div>
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">新密码</span>
+          <span className="text-sm font-medium text-text-secondary">新密码</span>
           <input
-            className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+            className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="至少 8 位"
@@ -583,9 +583,9 @@ export function AccountSecurity() {
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">确认新密码</span>
+          <span className="text-sm font-medium text-text-secondary">确认新密码</span>
           <input
-            className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+            className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
             type="password"
@@ -596,9 +596,9 @@ export function AccountSecurity() {
       {hasVerifiedMfa() && aalCurrent !== 'aal2' && (
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">两步验证码</span>
+            <span className="text-sm font-medium text-text-secondary">两步验证码</span>
             <input
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+              className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={mfaStepUpCode}
               onChange={(e) => setMfaStepUpCode(e.target.value)}
               placeholder="例如 123456"
@@ -606,13 +606,13 @@ export function AccountSecurity() {
               autoComplete="one-time-code"
               disabled={submitting}
             />
-            <div className="text-xs text-slate-500">为敏感操作验证身份（本次会话：{aalCurrent ?? 'aal1'}）</div>
+            <div className="text-xs text-text-tertiary">为敏感操作验证身份（本次会话：{aalCurrent ?? 'aal1'}）</div>
           </label>
         </div>
       )}
 
       <div className="mt-5 flex flex-col sm:flex-row gap-3">
-        <Button className="bg-brand-900 hover:bg-brand-800" onClick={onUpdatePassword} disabled={submitting}>
+        <Button onClick={onUpdatePassword} disabled={submitting}>
           {submitting ? '处理中…' : '更新密码'}
         </Button>
         <Button variant="outline" onClick={onLogoutOthers} disabled={submitting}>
@@ -626,10 +626,10 @@ export function AccountSecurity() {
         </Button>
       </div>
 
-      <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div className="mt-8 rounded-lg border border-border-default bg-surface-2 p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">两步验证（2FA）</div>
-          <div className="text-xs text-slate-500">{factorsLoading ? '加载中…' : aalCurrent ? `会话等级：${aalCurrent}` : ''}</div>
+          <div className="text-sm font-semibold text-text-primary">两步验证（2FA）</div>
+          <div className="text-xs text-text-tertiary">{factorsLoading ? '加载中…' : aalCurrent ? `会话等级：${aalCurrent}` : ''}</div>
         </div>
 
         <div className="mt-3 flex flex-col sm:flex-row gap-3">
@@ -641,17 +641,17 @@ export function AccountSecurity() {
           </Button>
         </div>
 
-        {factorsError && <div className="mt-3 text-sm text-red-600">{factorsError}</div>}
+        {factorsError && <div className="mt-3 text-sm text-signal-up">{factorsError}</div>}
 
         <div className="mt-4 space-y-2">
           {factors.length === 0 && !factorsLoading ? (
-            <div className="text-sm text-slate-600">未开启两步验证。</div>
+            <div className="text-sm text-text-secondary">未开启两步验证。</div>
           ) : (
             factors.map((f) => (
-              <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+              <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-border-default bg-surface-1 px-3 py-2">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-slate-900">{formatFactorLabel(f)}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-sm font-medium text-text-primary">{formatFactorLabel(f)}</div>
+                  <div className="text-xs text-text-tertiary">
                     状态：{f.status}
                     {f.created_at ? ` · 创建于：${formatTime(f.created_at)}` : ''}
                   </div>
@@ -667,10 +667,10 @@ export function AccountSecurity() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div className="mt-6 rounded-lg border border-border-default bg-surface-2 p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">信任设备</div>
-          <div className="text-xs text-slate-500">{devicesLoading ? '加载中…' : ''}</div>
+          <div className="text-sm font-semibold text-text-primary">信任设备</div>
+          <div className="text-xs text-text-tertiary">{devicesLoading ? '加载中…' : ''}</div>
         </div>
         <div className="mt-3 flex gap-3">
           <Button variant="outline" onClick={() => void reloadDevices()} disabled={devicesLoading}>
@@ -679,16 +679,16 @@ export function AccountSecurity() {
         </div>
         <div className="mt-4 space-y-2">
           {devices.length === 0 && !devicesLoading ? (
-            <div className="text-sm text-slate-600">暂无设备记录。</div>
+            <div className="text-sm text-text-secondary">暂无设备记录。</div>
           ) : (
             devices.map((d) => (
-              <div key={d.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+              <div key={d.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-border-default bg-surface-1 px-3 py-2">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-slate-900">
+                  <div className="text-sm font-medium text-text-primary">
                     {d.label || '设备'}
-                    {deviceFingerprint && d.fingerprint === deviceFingerprint ? <span className="ml-2 text-xs text-emerald-700">当前设备</span> : null}
+                    {deviceFingerprint && d.fingerprint === deviceFingerprint ? <span className="ml-2 text-xs text-signal-down">当前设备</span> : null}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-text-tertiary">
                     最近使用：{formatTime(d.last_seen_at)}
                     {d.user_agent ? ` · ${d.user_agent.slice(0, 80)}` : ''}
                   </div>
@@ -708,10 +708,10 @@ export function AccountSecurity() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div className="mt-6 rounded-lg border border-border-default bg-surface-2 p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">恢复码</div>
-          <div className="text-xs text-slate-500">{recoveryLoading ? '加载中…' : ''}</div>
+          <div className="text-sm font-semibold text-text-primary">恢复码</div>
+          <div className="text-xs text-text-tertiary">{recoveryLoading ? '加载中…' : ''}</div>
         </div>
         <div className="mt-3 flex flex-col sm:flex-row gap-3">
           <Button onClick={() => void onGenerateRecoveryCodes()} disabled={recoveryLoading || submitting}>
@@ -723,13 +723,13 @@ export function AccountSecurity() {
         </div>
         <div className="mt-4 space-y-2">
           {recoveryCodes.length === 0 && !recoveryLoading ? (
-            <div className="text-sm text-slate-600">尚未生成恢复码。</div>
+            <div className="text-sm text-text-secondary">尚未生成恢复码。</div>
           ) : (
             recoveryCodes.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
-                <div className="text-sm text-slate-700">
+              <div key={c.id} className="flex items-center justify-between gap-2 rounded-md border border-border-default bg-surface-1 px-3 py-2">
+                <div className="text-sm text-text-secondary">
                   生成时间：{formatTime(c.created_at)}
-                  {c.used_at ? <span className="ml-2 text-xs text-slate-400">已使用</span> : <span className="ml-2 text-xs text-emerald-700">未使用</span>}
+                  {c.used_at ? <span className="ml-2 text-xs text-text-tertiary">已使用</span> : <span className="ml-2 text-xs text-signal-down">未使用</span>}
                 </div>
               </div>
             ))
@@ -737,10 +737,10 @@ export function AccountSecurity() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div className="mt-6 rounded-lg border border-border-default bg-surface-2 p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">审计日志</div>
-          <div className="text-xs text-slate-500">{eventsLoading ? '加载中…' : ''}</div>
+          <div className="text-sm font-semibold text-text-primary">审计日志</div>
+          <div className="text-xs text-text-tertiary">{eventsLoading ? '加载中…' : ''}</div>
         </div>
         <div className="mt-3 flex gap-3">
           <Button variant="outline" onClick={() => void reloadEvents()} disabled={eventsLoading}>
@@ -749,12 +749,12 @@ export function AccountSecurity() {
         </div>
         <div className="mt-4 space-y-2">
           {events.length === 0 && !eventsLoading ? (
-            <div className="text-sm text-slate-600">暂无记录。</div>
+            <div className="text-sm text-text-secondary">暂无记录。</div>
           ) : (
             events.map((e) => (
-              <div key={e.id} className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
-                <div className="text-sm text-slate-700">{e.event_name}</div>
-                <div className="text-xs text-slate-500">{formatTime(e.created_at)}</div>
+              <div key={e.id} className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-surface-1 px-3 py-2">
+                <div className="text-sm text-text-secondary">{e.event_name}</div>
+                <div className="text-xs text-text-tertiary">{formatTime(e.created_at)}</div>
               </div>
             ))
           )}
@@ -764,7 +764,7 @@ export function AccountSecurity() {
       {(errorMessage || successMessage) && (
         <div
           className={`mt-6 rounded-lg border p-4 text-sm ${
-            errorMessage ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            errorMessage ? 'border-signal-up/30 bg-signal-up-bg text-signal-up' : 'border-signal-down/30 bg-signal-down-bg text-signal-down'
           }`}
         >
           {errorMessage ?? successMessage}
@@ -790,22 +790,22 @@ export function AccountSecurity() {
           <div className="space-y-4">
             {mfaEnrollQr ? (
               mfaEnrollQr.trim().startsWith('<svg') ? (
-                <div className="rounded-md border border-slate-200 bg-white p-3" dangerouslySetInnerHTML={{ __html: sanitizeSvg(mfaEnrollQr) }} />
+                <div className="rounded-md border border-border-default bg-surface-1 p-3" dangerouslySetInnerHTML={{ __html: sanitizeSvg(mfaEnrollQr) }} />
               ) : (
                 <img alt="二维码" className="w-56 h-56" src={mfaEnrollQr} />
               )
             ) : null}
 
             {mfaEnrollSecret ? (
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-text-secondary">
                 密钥：<span className="font-mono">{mfaEnrollSecret}</span>
               </div>
             ) : null}
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">输入验证码</span>
+              <span className="text-sm font-medium text-text-secondary">输入验证码</span>
               <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={mfaEnrollCode}
                 onChange={(e) => setMfaEnrollCode(e.target.value)}
                 placeholder="例如 123456"
@@ -819,7 +819,7 @@ export function AccountSecurity() {
             <Button variant="outline" onClick={() => setMfaEnrollOpen(false)} disabled={mfaEnrollBusy}>
               取消
             </Button>
-            <Button className="bg-brand-900 hover:bg-brand-800" onClick={() => void onVerifyEnrollTotp()} disabled={mfaEnrollBusy}>
+            <Button onClick={() => void onVerifyEnrollTotp()} disabled={mfaEnrollBusy}>
               {mfaEnrollBusy ? '处理中…' : '确认开启'}
             </Button>
           </DialogFooter>
@@ -841,17 +841,17 @@ export function AccountSecurity() {
             {recoveryPlainCodes?.length ? (
               <div className="grid grid-cols-2 gap-2">
                 {recoveryPlainCodes.map((c) => (
-                  <div key={c} className="rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900">
+                  <div key={c} className="rounded-md border border-border-default bg-surface-1 px-3 py-2 font-mono text-sm text-text-primary">
                     {c}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-slate-600">暂无恢复码。</div>
+              <div className="text-sm text-text-secondary">暂无恢复码。</div>
             )}
           </div>
           <DialogFooter>
-            <Button className="bg-brand-900 hover:bg-brand-800" onClick={() => setRecoveryDialogOpen(false)}>
+            <Button onClick={() => setRecoveryDialogOpen(false)}>
               我已保存
             </Button>
           </DialogFooter>

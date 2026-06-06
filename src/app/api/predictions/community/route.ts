@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   const prediction = {
-    post_id: post_id ?? '00000000-0000-0000-0000-000000000000', // placeholder if no post
+    post_id: post_id || null, // Allow null for standalone predictions
     user_id: userData.user.id,
     symbol,
     direction,

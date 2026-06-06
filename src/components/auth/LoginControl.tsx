@@ -27,229 +27,105 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [userEmail, setUserEmail] = useState<string | null>(initialEmail ?? null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | null>(
-    initialSubscriptionStatus ?? null,
-  );
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | null>(initialSubscriptionStatus ?? null);
 
   useEffect(() => {
     let cancelled = false;
-
     async function bootstrap() {
       const { data } = await supabase.auth.getUser();
       if (cancelled) return;
-
-      const nextEmail = data.user?.email ?? null;
-      setUserEmail(nextEmail);
-
-      if (!data.user) return;
-      if (!data.user.email) return;
-
-      const { error } = await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          email: data.user.email,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' },
-      );
+      setUserEmail(data.user?.email ?? null);
+      if (!data.user?.email) return;
+      await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email, updated_at: new Date().toISOString() }, { onConflict: 'id' });
       if (cancelled) return;
-      if (error) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_status, subscription_end_date')
-        .eq('id', data.user.id)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from('profiles').select('subscription_status, subscription_end_date').eq('id', data.user.id).maybeSingle();
       if (cancelled) return;
       const nextStatus = isSubscriptionActive(profile?.subscription_status, profile?.subscription_end_date) ? 'pro' : 'free';
       setSubscriptionStatus(nextStatus);
-
-      if (nextStatus === 'pro') {
-        try {
-          await fetch('/api/daily-briefing/subscribe', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ email: data.user.email, source: 'pro_login' }),
-          });
-        } catch {}
-      }
+      if (nextStatus === 'pro') { try { await fetch('/api/daily-briefing/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: data.user.email, source: 'pro_login' }) }); } catch {} }
     }
-
     bootstrap();
-
     const { data: subscription } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
-      if (event === 'SIGNED_OUT') {
-        setUserEmail(null);
-        setSubscriptionStatus(null);
-        return;
-      }
-
+      if (event === 'SIGNED_OUT') { setUserEmail(null); setSubscriptionStatus(null); return; }
       const user = session?.user;
-      if (!user) return;
-      if (!user.email) return;
-
-      setUserEmail(user.email ?? null);
-
-      await supabase.from('profiles').upsert(
-        {
-          id: user.id,
-          email: user.email,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' },
-      );
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_status, subscription_end_date')
-        .eq('id', user.id)
-        .maybeSingle();
-
+      if (!user?.email) return;
+      setUserEmail(user.email);
+      await supabase.from('profiles').upsert({ id: user.id, email: user.email, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+      const { data: profile } = await supabase.from('profiles').select('subscription_status, subscription_end_date').eq('id', user.id).maybeSingle();
       const nextStatus = isSubscriptionActive(profile?.subscription_status, profile?.subscription_end_date) ? 'pro' : 'free';
       setSubscriptionStatus(nextStatus);
-
-      if (nextStatus === 'pro') {
-        try {
-          await fetch('/api/daily-briefing/subscribe', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ email: user.email, source: 'pro_login' }),
-          });
-        } catch {}
-      }
-
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        const next = url.searchParams.get('next');
-        if (next) {
-          window.location.assign(next);
-        }
-      }
+      if (nextStatus === 'pro') { try { await fetch('/api/daily-briefing/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: user.email, source: 'pro_login' }) }); } catch {} }
+      if (typeof window !== 'undefined') { const url = new URL(window.location.href); const next = url.searchParams.get('next'); if (next) window.location.assign(next); }
     });
-
-    return () => {
-      cancelled = true;
-      subscription.subscription.unsubscribe();
-    };
+    return () => { cancelled = true; subscription.subscription.unsubscribe(); };
   }, [supabase]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (forceExpanded) {
-      setExpanded(true);
-      return;
-    }
+    if (forceExpanded) { setExpanded(true); return; }
     const url = new URL(window.location.href);
-    if (url.searchParams.get('login') === '1') {
-      setExpanded(true);
-    }
+    if (url.searchParams.get('login') === '1') setExpanded(true);
   }, [forceExpanded]);
 
   async function onSubmitAuth() {
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setErrorMessage('请输入邮箱和密码');
-      setNoticeMessage(null);
-      return;
-    }
-    if (password.length < 8) {
-      setErrorMessage('密码至少 8 位');
-      setNoticeMessage(null);
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMessage(null);
-    setNoticeMessage(null);
+    if (!trimmedEmail || !password) { setErrorMessage('请输入邮箱和密码'); setNoticeMessage(null); return; }
+    if (password.length < 8) { setErrorMessage('密码至少 8 位'); setNoticeMessage(null); return; }
+    setSubmitting(true); setErrorMessage(null); setNoticeMessage(null);
     trackEvent('auth_password_login_submit', {});
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password,
-      });
-
-      if (error) {
-        setErrorMessage(error.message);
-        trackEvent('auth_password_login_error', { message: error.message });
-        return;
-      }
-
-      setPassword('');
-      setExpanded(false);
-    } finally {
-      setSubmitting(false);
-    }
+      const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+      if (error) { setErrorMessage(error.message); trackEvent('auth_password_login_error', { message: error.message }); return; }
+      setPassword(''); setExpanded(false);
+    } finally { setSubmitting(false); }
   }
 
   async function onForgotPassword() {
     const trimmedEmail = email.trim();
-    try {
-      trackEvent('auth_password_reset_navigate', {});
-      if (typeof window !== 'undefined') {
-        window.location.assign(trimmedEmail ? `/reset-password?email=${encodeURIComponent(trimmedEmail)}` : '/reset-password');
-      }
-    } catch {}
+    trackEvent('auth_password_reset_navigate', {});
+    if (typeof window !== 'undefined') window.location.assign(trimmedEmail ? `/reset-password?email=${encodeURIComponent(trimmedEmail)}` : '/reset-password');
   }
 
-  async function onLogout() {
-    trackEvent('auth_logout', {});
-    await supabase.auth.signOut();
-  }
+  async function onLogout() { trackEvent('auth_logout', {}); await supabase.auth.signOut(); }
+
+  const inputClass = "w-full sm:w-[260px] h-9 rounded-lg border border-border-default bg-surface-2 px-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-brand/40 transition-colors";
 
   if (userEmail) {
     if (compact) {
       return (
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="w-6 h-6 rounded-full bg-brand-primary/20 flex items-center justify-center text-xs text-brand-accent font-mono border border-brand-primary/30">
+          <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center text-xs text-brand-light font-mono border border-brand/30">
             {userEmail[0].toUpperCase()}
           </div>
           <div className="flex flex-col min-w-0">
-             <span className="text-xs text-slate-300 truncate w-24 font-medium">{userEmail.split('@')[0]}</span>
-             {subscriptionStatus === 'pro' && <span className="text-[9px] text-brand-accent uppercase tracking-wider leading-none">Pro Terminal</span>}
+            <span className="text-xs text-text-secondary truncate w-24 font-medium">{userEmail.split('@')[0]}</span>
+            {subscriptionStatus === 'pro' && <span className="text-[9px] text-brand-light uppercase tracking-wider leading-none">Pro</span>}
           </div>
         </div>
       );
     }
-
     return (
       <div className="flex items-center gap-3">
         {subscriptionStatus === 'pro' && <Badge>Pro</Badge>}
-        <span className="text-sm text-slate-600 max-w-[220px] truncate">{userEmail}</span>
+        <span className="text-sm text-text-secondary max-w-[220px] truncate">{userEmail}</span>
         {subscriptionStatus === 'pro' ? (
-          <Button asChild variant="ghost" size="sm">
-            <TrackedLink href="/account" eventName="header_account_click" eventPayload={{ plan: 'pro' }}>
-              账号
-            </TrackedLink>
-          </Button>
+          <Button asChild variant="ghost" size="sm"><TrackedLink href="/account" eventName="header_account_click" eventPayload={{ plan: 'pro' }}>账号</TrackedLink></Button>
         ) : (
-          <Button asChild size="sm" className="bg-brand-900 hover:bg-brand-800">
-            <TrackedLink href="/pricing" eventName="header_upgrade_click" eventPayload={{ plan: 'free' }}>
-              升级到 Pro
-            </TrackedLink>
-          </Button>
+          <Button asChild size="sm"><TrackedLink href="/pricing" eventName="header_upgrade_click" eventPayload={{ plan: 'free' }}>升级到 Pro</TrackedLink></Button>
         )}
-        <Button variant="outline" size="sm" onClick={onLogout}>
-          退出登录
-        </Button>
+        <Button variant="outline" size="sm" onClick={onLogout}>退出登录</Button>
       </div>
     );
   }
 
   if (variant === 'page' && userEmail) {
     return (
-      <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6">
-        <div className="text-base font-semibold text-slate-900">你已登录</div>
-        <div className="mt-2 text-sm text-slate-600">{userEmail}</div>
+      <div className="w-full max-w-lg rounded-xl border border-border-default bg-surface-1 p-6">
+        <div className="text-base font-semibold text-text-primary">你已登录</div>
+        <div className="mt-2 text-sm text-text-secondary">{userEmail}</div>
         <div className="mt-6 flex items-center gap-3">
-          <Button asChild className="bg-brand-900 hover:bg-brand-800">
-            <TrackedLink href="/account" eventName="login_page_account_click">
-              进入账号中心
-            </TrackedLink>
-          </Button>
-          <Button variant="outline" onClick={onLogout}>
-            退出登录
-          </Button>
+          <Button asChild><TrackedLink href="/account" eventName="login_page_account_click">进入账号中心</TrackedLink></Button>
+          <Button variant="outline" onClick={onLogout}>退出登录</Button>
         </div>
       </div>
     );
@@ -260,12 +136,7 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
 
   if (compact && !userEmail) {
     return (
-      <Button
-        asChild
-        size="sm"
-        variant="outline"
-        className="w-full text-xs h-8 border-white/10 bg-white/5 hover:bg-white/10 text-slate-300"
-      >
+      <Button asChild size="sm" variant="outline" className="w-full text-xs h-8">
         <Link href="/login">登录</Link>
       </Button>
     );
@@ -274,55 +145,25 @@ export function LoginControl({ initialEmail, initialSubscriptionStatus, variant 
   return (
     <div className={variant === 'page' ? 'w-full max-w-lg' : 'flex items-center gap-3'}>
       {showToggle && (
-        <Button
-          size="sm"
-          variant={expandedValue ? 'outline' : 'default'}
-          onClick={() =>
-            setExpanded((v) => {
-              const next = !v;
-              trackEvent('auth_login_toggle', { expanded: next });
-              return next;
-            })
-          }
-        >
+        <Button size="sm" variant={expandedValue ? 'outline' : 'default'} onClick={() => setExpanded(v => { const next = !v; trackEvent('auth_login_toggle', { expanded: next }); return next; })}>
           登录
         </Button>
       )}
       {expandedValue && (
-        <div className={variant === 'page' ? 'rounded-xl border border-slate-200 bg-white p-6' : 'flex items-center gap-2 flex-wrap'}>
+        <div className={variant === 'page' ? 'rounded-xl border border-border-default bg-surface-1 p-6' : 'flex items-center gap-2 flex-wrap'}>
           {variant === 'page' && (
             <div className="mb-4">
-              <div className="text-xl font-bold text-slate-900">账号登录</div>
-              <div className="mt-1 text-sm text-slate-600">登录后会自动校验你的 Pro 权益。</div>
+              <div className="text-xl font-bold text-text-primary">账号登录</div>
+              <div className="mt-1 text-sm text-text-secondary">登录后会自动校验你的 Pro 权益。</div>
             </div>
           )}
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            placeholder="邮箱地址"
-            className="w-full sm:w-[260px] h-9 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
-          />
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            placeholder="密码（至少 8 位）"
-            className="w-full sm:w-[220px] h-9 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
-          />
-          <Button size="sm" onClick={onSubmitAuth} disabled={!email || !password || submitting}>
-            {submitting ? '处理中…' : '登录'}
-          </Button>
-          <Button asChild size="sm" variant="ghost">
-            <TrackedLink href="/signup" eventName="auth_signup_link_click">
-              注册账号
-            </TrackedLink>
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onForgotPassword} disabled={submitting}>
-            忘记密码
-          </Button>
-          {errorMessage && <div className="text-sm text-red-600">{errorMessage}</div>}
-          {noticeMessage && <div className="text-sm text-emerald-700">{noticeMessage}</div>}
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="邮箱地址" className={inputClass} />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="密码（至少 8 位）" className="w-full sm:w-[220px] h-9 rounded-lg border border-border-default bg-surface-2 px-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-brand/40 transition-colors" />
+          <Button size="sm" onClick={onSubmitAuth} disabled={!email || !password || submitting}>{submitting ? '处理中…' : '登录'}</Button>
+          <Button asChild size="sm" variant="ghost"><TrackedLink href="/signup" eventName="auth_signup_link_click">注册账号</TrackedLink></Button>
+          <Button size="sm" variant="ghost" onClick={onForgotPassword} disabled={submitting}>忘记密码</Button>
+          {errorMessage && <div className="text-sm text-signal-up">{errorMessage}</div>}
+          {noticeMessage && <div className="text-sm text-signal-down">{noticeMessage}</div>}
         </div>
       )}
     </div>

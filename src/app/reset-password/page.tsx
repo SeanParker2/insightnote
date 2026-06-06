@@ -172,31 +172,33 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-16">
+    <div className="min-h-screen bg-surface-1 py-16">
       <div className="max-w-xl mx-auto px-6">
-        <h1 className="text-3xl font-bold text-slate-900">重置密码</h1>
-        <p className="mt-4 text-sm text-slate-600">通过登录态或密保问题设置新密码。</p>
+        <h1 className="text-3xl font-bold text-text-primary">重置密码</h1>
+        <p className="mt-4 text-sm text-text-secondary">通过登录态或密保问题设置新密码。</p>
 
         {hasUser === false && (
-          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6">
-            <div className="text-sm text-slate-700">
+          <div className="mt-8 rounded-xl border border-border-default bg-surface-1 p-6">
+            <div className="text-sm text-text-secondary">
               若你忘记密码，可通过密保问题找回。请注意：若忘记密保问题答案，账号可能无法找回。
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-4">
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">邮箱</span>
+                <span className="text-sm font-medium text-text-secondary">邮箱</span>
                 <input
                   value={recoverEmail}
                   onChange={(e) => setRecoverEmail(e.target.value)}
                   type="email"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                   placeholder="注册邮箱"
                 />
               </label>
 
               <div className="flex items-center gap-3">
-                <Button className="bg-brand-900 hover:bg-brand-800" onClick={onLoadSecurityQuestion} disabled={recoverLoadingQuestion}>
+                
+                <Button
+ onClick={onLoadSecurityQuestion} disabled={recoverLoadingQuestion}>
                   {recoverLoadingQuestion ? '获取中…' : '获取密保问题'}
                 </Button>
                 <Button asChild variant="outline">
@@ -205,88 +207,90 @@ function ResetPasswordContent() {
               </div>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">密保问题</span>
+                <span className="text-sm font-medium text-text-secondary">密保问题</span>
                 <input
                   value={recoverQuestion ?? ''}
                   readOnly
-                  className="h-10 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none"
+                  className="h-10 rounded-md border border-border-default bg-surface-2 px-3 text-sm outline-none"
                   placeholder="点击上方按钮获取"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">密保问题答案</span>
+                <span className="text-sm font-medium text-text-secondary">密保问题答案</span>
                 <input
                   value={recoverAnswer}
                   onChange={(e) => setRecoverAnswer(e.target.value)}
                   type="password"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                   placeholder="请输入答案"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">新密码</span>
+                <span className="text-sm font-medium text-text-secondary">新密码</span>
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                   placeholder="至少 8 位"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">确认新密码</span>
+                <span className="text-sm font-medium text-text-secondary">确认新密码</span>
                 <input
                   value={password2}
                   onChange={(e) => setPassword2(e.target.value)}
                   type="password"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 />
               </label>
 
-              <Button
-                className="bg-brand-900 hover:bg-brand-800"
+                <Button
+
                 onClick={onRecoverReset}
                 disabled={submitting || recoverLoadingQuestion}
               >
                 {submitting ? '处理中…' : '验证并重置密码'}
               </Button>
 
-              {errorMessage && <div className="text-sm text-red-600">{errorMessage}</div>}
-              {successMessage && <div className="text-sm text-emerald-700">{successMessage}</div>}
+              {errorMessage && <div className="text-sm text-signal-up">{errorMessage}</div>}
+              {successMessage && <div className="text-sm text-signal-down">{successMessage}</div>}
             </div>
           </div>
         )}
 
         {hasUser !== false && (
-          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6">
+          <div className="mt-8 rounded-xl border border-border-default bg-surface-1 p-6">
             <div className="grid grid-cols-1 gap-4">
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">新密码</span>
+                <span className="text-sm font-medium text-text-secondary">新密码</span>
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                   placeholder="至少 8 位"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">确认新密码</span>
+                <span className="text-sm font-medium text-text-secondary">确认新密码</span>
                 <input
                   value={password2}
                   onChange={(e) => setPassword2(e.target.value)}
                   type="password"
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                  className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 />
               </label>
             </div>
 
             <div className="mt-5 flex items-center gap-3">
-              <Button className="bg-brand-900 hover:bg-brand-800" onClick={onSubmit} disabled={submitting}>
+              
+                <Button
+ onClick={onSubmit} disabled={submitting}>
                 {submitting ? '处理中…' : '更新密码'}
               </Button>
               <Button
@@ -301,8 +305,8 @@ function ResetPasswordContent() {
               </Button>
             </div>
 
-            {errorMessage && <div className="mt-4 text-sm text-red-600">{errorMessage}</div>}
-            {successMessage && <div className="mt-4 text-sm text-emerald-700">{successMessage}</div>}
+            {errorMessage && <div className="mt-4 text-sm text-signal-up">{errorMessage}</div>}
+            {successMessage && <div className="mt-4 text-sm text-signal-down">{successMessage}</div>}
           </div>
         )}
       </div>

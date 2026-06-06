@@ -419,19 +419,19 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
 
   return (
     <div className="mt-8 space-y-6">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-base font-bold text-slate-900">订阅与账单</div>
+      <div className="rounded-xl border border-border-default bg-surface-1 p-6 ">
+        <div className="text-base font-bold text-text-primary">订阅与账单</div>
         <div className="mt-4 space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-lg border border-border-default bg-surface-2 p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-sm font-semibold text-text-primary">
                   当前方案：{isSubscriptionActive(subscriptionStatus, subscriptionEndDate) ? 'Pro' : '免费'}
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-text-tertiary">
                   {subscriptionEndDate ? `到期时间：${new Date(subscriptionEndDate).toLocaleDateString('zh-CN')}` : '到期时间：未设置'}
                   {subscriptionInterval ? ` · 周期：${subscriptionInterval}` : ''}
-                  {cancelAtPeriodEnd ? <span className="ml-2 text-slate-400">（已设置到期后取消）</span> : null}
+                  {cancelAtPeriodEnd ? <span className="ml-2 text-text-tertiary">（已设置到期后取消）</span> : null}
                 </div>
               </div>
 
@@ -443,7 +443,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                 >
                   {cancelAtPeriodEnd ? '恢复续费' : '到期后取消'}
                 </Button>
-                <Button asChild className="bg-brand-900 hover:bg-brand-800">
+                <Button asChild>
                   <TrackedLink
                     href={`/feedback?category=billing&message=${encodeURIComponent(computeBillingMessage(subscriptionStatus))}`}
                     eventName="account_billing_support_click"
@@ -456,23 +456,23 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="text-sm font-semibold text-slate-900">订单历史</div>
+          <div className="rounded-lg border border-border-default bg-surface-1 p-4">
+            <div className="text-sm font-semibold text-text-primary">订单历史</div>
             <div className="mt-3 space-y-2">
               {billingLoading ? (
-                <div className="text-sm text-slate-500">加载中…</div>
+                <div className="text-sm text-text-tertiary">加载中…</div>
               ) : billingOrders.length === 0 ? (
-                <div className="text-sm text-slate-600">暂无订单记录。</div>
+                <div className="text-sm text-text-secondary">暂无订单记录。</div>
               ) : (
                 billingOrders.map((o) => (
-                  <div key={o.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-sm text-slate-700">
-                      <span className="font-medium text-slate-900">#{o.id}</span>
+                  <div key={o.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-border-default bg-surface-2 px-3 py-2">
+                    <div className="text-sm text-text-secondary">
+                      <span className="font-medium text-text-primary">#{o.id}</span>
                       <span className="ml-2">Pro · {o.interval}</span>
                       <span className="ml-2">{formatMoney(o.amount_cents, o.currency)}</span>
-                      <span className="ml-2 text-xs text-slate-500">状态：{o.status}</span>
+                      <span className="ml-2 text-xs text-text-tertiary">状态：{o.status}</span>
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-text-tertiary">
                       {o.paid_at ? `支付：${formatTime(o.paid_at)}` : `创建：${formatTime(o.created_at)}`}
                     </div>
                   </div>
@@ -483,11 +483,11 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-base font-bold text-slate-900">账号资料</div>
+      <div className="rounded-xl border border-border-default bg-surface-1 p-6 ">
+        <div className="text-base font-bold text-text-primary">账号资料</div>
         <div className="mt-4 flex flex-col sm:flex-row gap-5">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+            <div className="h-16 w-16 overflow-hidden rounded-full border border-border-default bg-surface-2">
               {avatarUrl ? (
                 <NextImage
                   src={avatarUrl}
@@ -498,13 +498,13 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                   unoptimized
                 />
               ) : (
-                <div className="h-full w-full grid place-items-center text-xs text-slate-500">暂无头像</div>
+                <div className="h-full w-full grid place-items-center text-xs text-text-tertiary">暂无头像</div>
               )}
             </div>
             <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium text-slate-700">昵称</div>
+              <div className="text-sm font-medium text-text-secondary">昵称</div>
               <input
-                className="h-10 w-full sm:w-72 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+                className="h-10 w-full sm:w-72 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
                 value={nickname}
                 onChange={(e) => {
                   setNickname(e.target.value);
@@ -514,12 +514,12 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                 placeholder="填写一个展示昵称"
                 disabled={saving}
               />
-              <div className="text-xs text-slate-500">输入后自动保存</div>
+              <div className="text-xs text-text-tertiary">输入后自动保存</div>
             </div>
           </div>
 
           <div className="sm:ml-auto flex flex-col sm:items-end gap-2">
-            <div className="text-sm font-medium text-slate-700">头像</div>
+            <div className="text-sm font-medium text-text-secondary">头像</div>
             <Button
               variant="outline"
               onClick={() => {
@@ -529,18 +529,18 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
             >
               上传头像
             </Button>
-            <div className="text-xs text-slate-500">支持裁剪与压缩</div>
+            <div className="text-xs text-text-tertiary">支持裁剪与压缩</div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-base font-bold text-slate-900">偏好设置</div>
+      <div className="rounded-xl border border-border-default bg-surface-1 p-6 ">
+        <div className="text-base font-bold text-text-primary">偏好设置</div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">语言</span>
+            <span className="text-sm font-medium text-text-secondary">语言</span>
             <select
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+              className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={language}
               disabled={saving}
               onChange={(e) => {
@@ -555,27 +555,27 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
             </select>
           </label>
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">时区</span>
+            <span className="text-sm font-medium text-text-secondary">时区</span>
             <input
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+              className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={timezone}
               disabled={saving}
               onChange={(e) => setTimezone(e.target.value)}
               onBlur={() => void savePreferences({ timezone: timezone.trim() || null })}
               placeholder="例如 Asia/Shanghai"
             />
-            <div className="text-xs text-slate-500">支持 IANA 时区标识，失焦时保存</div>
+            <div className="text-xs text-text-tertiary">支持 IANA 时区标识，失焦时保存</div>
           </label>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-base font-bold text-slate-900">邮件偏好</div>
+      <div className="rounded-xl border border-border-default bg-surface-1 p-6 ">
+        <div className="text-base font-bold text-text-primary">邮件偏好</div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+          <label className="flex items-center justify-between rounded-lg border border-border-default p-4">
             <div>
-              <div className="text-sm font-semibold text-slate-900">接收更新邮件</div>
-              <div className="mt-1 text-xs text-slate-500">默认开启，可随时退订</div>
+              <div className="text-sm font-semibold text-text-primary">接收更新邮件</div>
+              <div className="mt-1 text-xs text-text-tertiary">默认开启，可随时退订</div>
             </div>
             <input
               type="checkbox"
@@ -590,9 +590,9 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
             />
           </label>
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">发送频率</span>
+            <span className="text-sm font-medium text-text-secondary">发送频率</span>
             <select
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm outline-none focus-visible:border-slate-400"
+              className="h-10 rounded-md border border-border-default px-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-brand/40"
               value={emailFrequency}
               disabled={saving || !emailSubscribed}
               onChange={(e) => {
@@ -605,7 +605,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
               <option value="weekly">每周</option>
               <option value="monthly">每月</option>
             </select>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-text-tertiary">
               每封邮件都会包含免登录退订链接{email ? `（发送至：${email}）` : ''}
             </div>
           </label>
@@ -615,7 +615,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
       {(errorMessage || successMessage) && (
         <div
           className={`rounded-xl border p-4 text-sm ${
-            errorMessage ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            errorMessage ? 'border-signal-up/30 bg-signal-up-bg text-signal-up' : 'border-signal-down/30 bg-signal-down-bg text-signal-down'
           }`}
         >
           {errorMessage ?? successMessage}
@@ -645,9 +645,9 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
 
             {avatarPreviewUrl && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-xs text-slate-500 mb-2">预览（方形裁剪）</div>
-                    <div className="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white">
+                <div className="rounded-lg border border-border-default bg-surface-2 p-3">
+                  <div className="text-xs text-text-tertiary mb-2">预览（方形裁剪）</div>
+                    <div className="aspect-square overflow-hidden rounded-md border border-border-default bg-surface-1">
                     <div className="relative h-full w-full">
                       <NextImage
                         src={avatarPreviewUrl}
@@ -665,7 +665,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                 </div>
                 <div className="space-y-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs text-slate-600">缩放</span>
+                    <span className="text-xs text-text-secondary">缩放</span>
                     <input
                       type="range"
                       min={1}
@@ -677,7 +677,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs text-slate-600">水平偏移</span>
+                    <span className="text-xs text-text-secondary">水平偏移</span>
                     <input
                       type="range"
                       min={-120}
@@ -689,7 +689,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs text-slate-600">垂直偏移</span>
+                    <span className="text-xs text-text-secondary">垂直偏移</span>
                     <input
                       type="range"
                       min={-120}
@@ -709,7 +709,7 @@ export function AccountCenterClient({ userId, email, initialProfile }: Props) {
             <Button variant="outline" onClick={() => setAvatarDialogOpen(false)} disabled={avatarUploading}>
               取消
             </Button>
-            <Button className="bg-brand-900 hover:bg-brand-800" onClick={onUploadAvatar} disabled={!avatarFile || avatarUploading}>
+            <Button onClick={onUploadAvatar} disabled={!avatarFile || avatarUploading}>
               {avatarUploading ? '上传中…' : '保存头像'}
             </Button>
           </DialogFooter>

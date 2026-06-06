@@ -1,81 +1,77 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/server';
 import { LoginControl } from '@/components/auth/LoginControl';
 import { SidebarLink } from '@/components/SidebarLink';
-import { UnreadBadge } from '@/components/ui/UnreadBadge';
 import { isSubscriptionActive } from '@/lib/utils';
-import { Home, Layers, Bell, Settings, BookOpen, Briefcase, BarChart3, Zap, Activity, Compass, FileText, Target, Swords, Edit3 } from 'lucide-react';
+import { 
+  Home, 
+  BarChart2, 
+  FileText, 
+  Briefcase, 
+  Bell, 
+  Settings,
+  Brain,
+  Target,
+  Compass,
+  BookOpen,
+  Zap
+} from 'lucide-react';
 import { cache } from 'react';
 
 const getUserProfile = cache(async () => {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return { user: null, profile: null, isProActive: false };
+  if (!user) return { user: null, isProActive: false };
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, subscription_end_date, is_admin')
+    .select('subscription_status, subscription_end_date')
     .eq('id', user.id)
     .maybeSingle();
-  return { user, profile, isProActive: isSubscriptionActive(profile?.subscription_status, profile?.subscription_end_date) };
+  return { user, isProActive: isSubscriptionActive(profile?.subscription_status, profile?.subscription_end_date) };
 });
 
 export async function AppSidebar() {
-  const { user, profile, isProActive } = await getUserProfile();
+  const { user, isProActive } = await getUserProfile();
 
   return (
-    <aside className="hidden lg:flex flex-col w-[200px] min-h-screen border-r border-neutral-100 bg-white">
+    <aside className="hidden lg:flex flex-col w-56 h-screen border-r border-[#1a1a1a] bg-[#0a0a0a]">
       {/* Logo */}
-      <div className="h-14 flex items-center px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-neutral-900 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">IN</span>
-          </div>
-          <span className="text-sm font-semibold text-neutral-900 tracking-tight">InsightNote</span>
+      <div className="h-14 flex items-center px-4 border-b border-[#1a1a1a]">
+        <Link href="/" className="text-sm font-semibold tracking-tight">
+          InsightNote
         </Link>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-        <SidebarLink href="/" icon={<Home className="w-4 h-4" />} label="首页" />
-        <SidebarLink href="/posts" icon={<FileText className="w-4 h-4" />} label="深度研究" />
-        <SidebarLink href="/briefing" icon={<Activity className="w-4 h-4" />} label="每日晨报" badge={<UnreadBadge type="briefing" />} />
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        <SidebarLink href="/" icon={<Home size={16} />} label="首页" />
+        <SidebarLink href="/market" icon={<BarChart2 size={16} />} label="行情" />
+        <SidebarLink href="/posts" icon={<FileText size={16} />} label="研究" />
         
-        <div className="h-px bg-neutral-100 my-3" />
-        <div className="px-2 py-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">分析工具</div>
+        <div className="h-px bg-[#1a1a1a] my-3 mx-2" />
         
-        <SidebarLink href="/tools/butterfly" icon={<Target className="w-4 h-4" />} label="蝴蝶效应" />
-        <SidebarLink href="/tools/graph-editor" icon={<Edit3 className="w-4 h-4" />} label="图谱编辑" />
-        <SidebarLink href="/scenario" icon={<Compass className="w-4 h-4" />} label="情景模拟" />
-        <SidebarLink href="/battle-map" icon={<Layers className="w-4 h-4" />} label="作战地图" />
-        <SidebarLink href="/controversies" icon={<Swords className="w-4 h-4" />} label="争议地图" />
-
-        <div className="h-px bg-neutral-100 my-3" />
-        <div className="px-2 py-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">个人</div>
+        <SidebarLink href="/agents" icon={<Brain size={16} />} label="AI 分析" />
+        <SidebarLink href="/tools/butterfly" icon={<Target size={16} />} label="蝴蝶效应" />
+        <SidebarLink href="/scenario" icon={<Compass size={16} />} label="情景模拟" />
         
-        <SidebarLink href="/journal" icon={<BookOpen className="w-4 h-4" />} label="决策日志" />
-        <SidebarLink href="/portfolio" icon={<Briefcase className="w-4 h-4" />} label="持仓管理" />
-        <SidebarLink href="/reviews" icon={<BarChart3 className="w-4 h-4" />} label="周度复盘" />
-        <SidebarLink href="/notifications" icon={<Bell className="w-4 h-4" />} label="预警" badge={<UnreadBadge type="alerts" />} />
-        <SidebarLink href="/account" icon={<Settings className="w-4 h-4" />} label="设置" />
+        <div className="h-px bg-[#1a1a1a] my-3 mx-2" />
+        
+        <SidebarLink href="/portfolio" icon={<Briefcase size={16} />} label="持仓" />
+        <SidebarLink href="/journal" icon={<BookOpen size={16} />} label="日志" />
+        <SidebarLink href="/notifications" icon={<Bell size={16} />} label="通知" />
+        <SidebarLink href="/account" icon={<Settings size={16} />} label="设置" />
       </nav>
 
       {/* Bottom */}
-      <div className="p-3 border-t border-neutral-100">
+      <div className="p-3 border-t border-[#1a1a1a]">
         {!isProActive && (
-          <div className="mb-3 p-3 rounded-xl bg-neutral-900 text-white">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Zap className="w-3 h-3 text-amber-400" />
-              <span className="text-xs font-semibold">升级 Pro</span>
-            </div>
-            <p className="text-[11px] text-neutral-400 mb-2.5 leading-relaxed">解锁全部深度研究</p>
-            <Button size="sm" className="w-full h-7 text-[11px] bg-white text-neutral-900 hover:bg-neutral-100 rounded-lg" asChild>
-              <Link href="/pricing">立即开通</Link>
-            </Button>
-          </div>
+          <Link href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#666] hover:text-[#999] hover:bg-[#141414] transition-colors">
+            <Zap size={14} />
+            <span>升级 Pro</span>
+          </Link>
         )}
-        <div className="flex items-center justify-between">
+        <div className="mt-2">
           <LoginControl initialEmail={user?.email ?? null} initialSubscriptionStatus={isProActive ? 'pro' : 'free'} compact />
         </div>
       </div>

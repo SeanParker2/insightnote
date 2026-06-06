@@ -1,27 +1,35 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { verifyPrediction } from '@/lib/ai-helper';
+import { createDataProvider } from '@/lib/data-provider';
 import { timingSafeCompare } from '@/lib/crypto';
 import type { Prediction } from '@/types';
 
-// Mock function to get market data
-// In a real scenario, this would call Yahoo Finance, AlphaVantage, or a paid data provider
 async function getMarketContext(symbol: string): Promise<string> {
-  // Mock data for demo purposes - In a real app, fetch from Yahoo Finance/News API
-  const mockPrices: Record<string, number> = {
-    'AAPL': 230.50,
-    'NVDA': 145.20,
-    'BTC-USD': 98000.00,
-    'TSLA': 350.00,
-    'MSFT': 420.00,
-    'GOOGL': 180.00,
-  };
+  try {
+    const provider = createDataProvider();
+    const [quote, news] = await Promise.all([
+      provider.getQuote(symbol).catch(() => null),
+      provider.getNews(symbol, 3).catch(() => []),
+    ]);
 
-  const price = mockPrices[symbol] || (100 + Math.random() * 50);
-  
-  return `Market Report: ${new Date().toISOString()}. 
-  The current trading price for ${symbol} is $${price.toFixed(2)}. 
-  Market sentiment is generally volatile. Tech sector is showing strength.`;
+    const parts: string[] = [`Market Report: ${new Date().toISOString()}.`];
+
+    if (quote) {
+      parts.push(`The current trading price for ${symbol} is $${quote.price.toFixed(2)}.`);
+      parts.push(`Daily change: ${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%.`);
+      parts.push(`Day range: $${quote.low.toFixed(2)} - $${quote.high.toFixed(2)}.`);
+    }
+
+    if (news.length > 0) {
+      parts.push(`Recent news: ${news.map(n => n.title).join('; ')}.`);
+    }
+
+    return parts.join(' ');
+  } catch (error) {
+    console.error(`Failed to get market context for ${symbol}:`, error);
+    return `Market data unavailable for ${symbol}.`;
+  }
 }
 
 export async function GET(request: Request) {
@@ -37,7 +45,6 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
 
-  // 1. Fetch active predictions
   const { data: predictions, error } = await supabase
     .from('predictions')
     .select('*')
@@ -54,12 +61,10 @@ export async function GET(request: Request) {
   const results = [];
   const updatedPostIds = new Set<string>();
 
-  // 2. Iterate and verify using AI
   for (const prediction of predictions) {
     try {
       const marketContext = await getMarketContext(prediction.symbol);
       
-      // Use DeepSeek AI to verify
       const verification = await verifyPrediction(
         prediction.symbol,
         prediction.direction,
@@ -67,22 +72,20 @@ export async function GET(request: Request) {
         marketContext
       );
 
-      // Check expiration as a fallback if AI says "active" but time is up
       let newStatus: 'active' | 'won' | 'lost' | 'expired' = verification.status;
       if (newStatus === 'active') {
         const now = new Date();
         const createdAt = new Date(prediction.created_at);
         const deadline = new Date(createdAt.getTime() + (prediction.timeframe_days || 30) * 24 * 60 * 60 * 1000);
         if (now > deadline) {
-           newStatus = 'expired'; // Or 'lost' depending on business rule. Let's say expired.
+          newStatus = 'expired';
         }
       }
 
       if (newStatus !== 'active') {
-        // Update DB
         const { error: updateError } = await supabase
           .from('predictions')
-          .update({ status: newStatus }) // We could also save verification.reason if we added a column
+          .update({ status: newStatus })
           .eq('id', prediction.id);
 
         if (!updateError) {
@@ -97,9 +100,9 @@ export async function GET(request: Request) {
         }
       } else {
         results.push({
-            id: prediction.id,
-            status: 'active',
-            reason: verification.reason
+          id: prediction.id,
+          status: 'active',
+          reason: verification.reason
         });
       }
     } catch (e) {
@@ -108,7 +111,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // 3. Recalculate Success Rate for affected Posts (batched)
   if (updatedPostIds.size > 0) {
     const postIds = Array.from(updatedPostIds);
     const { data: allPredictions } = await supabase
@@ -119,10 +121,10 @@ export async function GET(request: Request) {
     if (allPredictions) {
       const rateMap = new Map<string, number>();
       for (const pid of postIds) {
-        const postPreds = allPredictions.filter((p) => p.post_id === pid);
-        const completed = postPreds.filter((p) => p.status === 'won' || p.status === 'lost');
+        const postPreds = allPredictions.filter((p: any) => p.post_id === pid);
+        const completed = postPreds.filter((p: any) => p.status === 'won' || p.status === 'lost');
         if (completed.length > 0) {
-          const won = completed.filter((p) => p.status === 'won').length;
+          const won = completed.filter((p: any) => p.status === 'won').length;
           rateMap.set(pid, (won / completed.length) * 100);
         }
       }
